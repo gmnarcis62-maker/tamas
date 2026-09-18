@@ -2,13 +2,14 @@ package red.line.callino.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.net.URLEncoder
 
 @Entity(tableName = "call_themes")
 data class CallTheme(
     @PrimaryKey val id: String,
     val titleFa: String,
     val titleEn: String,
-    val type: ThemeType, // IMAGE, VIDEO, ANIMATION, CUSTOM
+    val type: ThemeType,
     val previewResName: String,
     val mediaResName: String? = null,
     val mediaUri: String? = null,
@@ -102,14 +103,15 @@ data class AssetTheme(
     val effect: EffectType = EffectType.NONE
 ) {
     fun toCallTheme(): CallTheme {
+        val encodedPath = encodeAssetPath(assetPath)
         val mediaUri = when (type) {
-            ThemeType.IMAGE -> "file:///android_asset/$assetPath"
-            ThemeType.VIDEO -> "asset:///$assetPath"
-            ThemeType.ANIMATION -> "file:///android_asset/$assetPath"
+            ThemeType.IMAGE -> "file:///android_asset/$encodedPath"
+            ThemeType.VIDEO -> "asset:///$encodedPath"
+            ThemeType.ANIMATION -> "file:///android_asset/$encodedPath"
             ThemeType.CUSTOM -> assetPath
         }
         val preview = if (!previewPath.isNullOrBlank()) {
-            "file:///android_asset/$previewPath"
+            "file:///android_asset/${encodeAssetPath(previewPath)}"
         } else {
             id
         }
@@ -125,6 +127,20 @@ data class AssetTheme(
             descriptionFa = if (descriptionFa.isNotBlank()) descriptionFa else "پوسته پیش‌فرض داخلی تماسینو",
             effect = effect
         )
+    }
+}
+
+/**
+ * مسیر asset رو encode می‌کنه تا فایل‌هایی با کاراکتر خاص (#، فاصله، ایموجی)
+ * هم درست لود بشن. '/' حفظ می‌شه.
+ */
+private fun encodeAssetPath(path: String): String {
+    return path.split("/").joinToString("/") { segment ->
+        try {
+            URLEncoder.encode(segment, "UTF-8").replace("+", "%20")
+        } catch (e: Exception) {
+            segment
+        }
     }
 }
 

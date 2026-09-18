@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -67,27 +65,9 @@ import red.line.callino.data.CallTheme
 import red.line.callino.data.ThemeType
 import red.line.callino.data.VipStatus
 import red.line.callino.ui.components.CallThemeBackground
-import red.line.callino.ui.components.CallinoChip
 import red.line.callino.ui.components.VSpacer
 import red.line.callino.ui.theme.Radius
 import red.line.callino.ui.theme.Spacing
-
-// ============================================================
-// فقط ۴ دسته اصلی: همه، تصاویر، انیمیشن‌ها، ویدیوها
-// ============================================================
-private enum class ThemeFilter(val label: String, val icon: ImageVector) {
-    ALL("همه", Icons.Default.Palette),
-    IMAGES("تصاویر", Icons.Default.Image),
-    ANIMATIONS("انیمیشن‌ها", Icons.Default.Animation),
-    VIDEOS("ویدیوها", Icons.Default.Videocam);
-
-    fun matches(theme: CallTheme): Boolean = when (this) {
-        ALL -> true
-        IMAGES -> theme.type == ThemeType.IMAGE
-        ANIMATIONS -> theme.type == ThemeType.ANIMATION || theme.type == ThemeType.CUSTOM
-        VIDEOS -> theme.type == ThemeType.VIDEO
-    }
-}
 
 @Composable
 fun ThemesScreen(
@@ -101,7 +81,6 @@ fun ThemesScreen(
     onNavigateToVip: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var selectedFilter by remember { mutableStateOf(ThemeFilter.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var lockedThemeForDialog by remember { mutableStateOf<CallTheme?>(null) }
 
@@ -126,15 +105,17 @@ fun ThemesScreen(
         }
     }
 
-    // فیلتر بر اساس دسته + جستجو
-    val filteredThemes = remember(namedThemes, selectedFilter, searchQuery) {
-        namedThemes.filter { theme ->
-            if (!selectedFilter.matches(theme)) return@filter false
-            if (searchQuery.isBlank()) return@filter true
+    // فقط جستجو، بدون دسته‌بندی
+    val filteredThemes = remember(namedThemes, searchQuery) {
+        if (searchQuery.isBlank()) {
+            namedThemes
+        } else {
             val q = searchQuery.trim().lowercase()
-            theme.titleFa.lowercase().contains(q) ||
-                    theme.category.lowercase().contains(q) ||
-                    theme.descriptionFa.lowercase().contains(q)
+            namedThemes.filter { theme ->
+                theme.titleFa.lowercase().contains(q) ||
+                        theme.category.lowercase().contains(q) ||
+                        theme.descriptionFa.lowercase().contains(q)
+            }
         }
     }
 
@@ -147,9 +128,7 @@ fun ThemesScreen(
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
-        // ===================================================
         // Header
-        // ===================================================
         item(span = { GridItemSpan(2) }) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -166,7 +145,7 @@ fun ThemesScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "پوسته‌های شیک برای شخصی‌سازی تماس‌های ورودی",
+                            text = "${namedThemes.size} تم آماده برای شخصی‌سازی",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -252,27 +231,7 @@ fun ThemesScreen(
             }
         }
 
-        // ===================================================
-        // Filters: همه / تصاویر / انیمیشن‌ها / ویدیوها
-        // ===================================================
-        item(span = { GridItemSpan(2) }) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                contentPadding = PaddingValues(vertical = Spacing.xs)
-            ) {
-                items(ThemeFilter.values().toList()) { filter ->
-                    CallinoChip(
-                        text = filter.label,
-                        selected = selectedFilter == filter,
-                        onClick = { selectedFilter = filter }
-                    )
-                }
-            }
-        }
-
-        // ===================================================
         // Empty State
-        // ===================================================
         if (filteredThemes.isEmpty()) {
             item(span = { GridItemSpan(2) }) {
                 Column(
@@ -290,10 +249,8 @@ fun ThemesScreen(
                     )
                     VSpacer(12)
                     Text(
-                        text = if (searchQuery.isNotBlank())
-                            "تمی با این مشخصات پیدا نشد"
-                        else
-                            "هنوز تمی اضافه نشده",
+                        text = if (searchQuery.isNotBlank()) "تمی با این مشخصات پیدا نشد"
+                        else "هنوز تمی اضافه نشده",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -310,10 +267,8 @@ fun ThemesScreen(
             }
         }
 
-        // ===================================================
         // Theme Cards
-        // ===================================================
-        itemsIndexed(filteredThemes, key = { _, t -> t.id }) { index, theme ->
+        itemsIndexed(filteredThemes, key = { _, t -> t.id }) { _, theme ->
             ThemeCardItem(
                 theme = theme,
                 isActive = theme.id == activeThemeId,
@@ -326,9 +281,7 @@ fun ThemesScreen(
         }
     }
 
-    // ===================================================
     // VIP Locked Dialog
-    // ===================================================
     if (lockedThemeForDialog != null) {
         val theme = lockedThemeForDialog!!
         AlertDialog(
@@ -393,9 +346,6 @@ fun ThemesScreen(
     }
 }
 
-// ===================================================
-// Theme Card
-// ===================================================
 @Composable
 private fun ThemeCardItem(
     theme: CallTheme,
@@ -431,31 +381,15 @@ private fun ThemeCardItem(
                     .padding(Spacing.md),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Top Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     when {
-                        isActive -> StatusBadge(
-                            text = "فعال",
-                            bg = MaterialTheme.colorScheme.primary,
-                            fg = Color.White,
-                            icon = Icons.Default.CheckCircle
-                        )
-                        isLocked -> StatusBadge(
-                            text = "VIP",
-                            bg = Color(0xFFFFD700),
-                            fg = Color.Black,
-                            icon = Icons.Default.Lock
-                        )
-                        else -> StatusBadge(
-                            text = theme.type.typeLabel(),
-                            bg = Color.Black.copy(alpha = 0.55f),
-                            fg = Color.White,
-                            icon = theme.type.typeIcon()
-                        )
+                        isActive -> StatusBadge("فعال", MaterialTheme.colorScheme.primary, Color.White, Icons.Default.CheckCircle)
+                        isLocked -> StatusBadge("VIP", Color(0xFFFFD700), Color.Black, Icons.Default.Lock)
+                        else -> StatusBadge(theme.type.typeLabel(), Color.Black.copy(alpha = 0.55f), Color.White, theme.type.typeIcon())
                     }
 
                     Surface(
@@ -476,7 +410,6 @@ private fun ThemeCardItem(
                     }
                 }
 
-                // Bottom
                 Column {
                     Text(
                         text = theme.titleFa,
@@ -490,9 +423,7 @@ private fun ThemeCardItem(
                     if (isLocked) {
                         Button(
                             onClick = onUnlockVip,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(34.dp),
+                            modifier = Modifier.fillMaxWidth().height(34.dp),
                             shape = RoundedCornerShape(Radius.xs),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFFFB800),
@@ -500,24 +431,14 @@ private fun ThemeCardItem(
                             ),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.WorkspacePremium,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp)
-                            )
+                            Icon(Icons.Default.WorkspacePremium, null, modifier = Modifier.size(13.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "بازگشایی",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("بازگشایی", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     } else if (!isActive) {
                         Button(
                             onClick = onSelect,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(34.dp),
+                            modifier = Modifier.fillMaxWidth().height(34.dp),
                             shape = RoundedCornerShape(Radius.xs),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color.White,
@@ -525,11 +446,7 @@ private fun ThemeCardItem(
                             ),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(
-                                text = "انتخاب تم",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("انتخاب تم", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     } else {
                         Box(
@@ -537,16 +454,10 @@ private fun ThemeCardItem(
                                 .fillMaxWidth()
                                 .height(34.dp)
                                 .clip(RoundedCornerShape(Radius.xs))
-                                .background(MaterialTheme.colorScheme.primary)
-                                .padding(horizontal = Spacing.md),
+                                .background(MaterialTheme.colorScheme.primary),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "✓ فعال",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Text("✓ فعال", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -556,33 +467,15 @@ private fun ThemeCardItem(
 }
 
 @Composable
-private fun StatusBadge(
-    text: String,
-    bg: Color,
-    fg: Color,
-    icon: ImageVector
-) {
-    Surface(
-        shape = RoundedCornerShape(Radius.xs),
-        color = bg
-    ) {
+private fun StatusBadge(text: String, bg: Color, fg: Color, icon: ImageVector) {
+    Surface(shape = RoundedCornerShape(Radius.xs), color = bg) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = fg,
-                modifier = Modifier.size(11.dp)
-            )
+            Icon(icon, null, tint = fg, modifier = Modifier.size(11.dp))
             Spacer(Modifier.width(4.dp))
-            Text(
-                text = text,
-                color = fg,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text, color = fg, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

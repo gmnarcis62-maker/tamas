@@ -2,12 +2,8 @@ package red.line.callino.data
 
 import android.content.Context
 import android.util.Log
+import java.net.URLEncoder
 
-/**
- * اسکنر پوشه‌های assets برای پیدا کردن فایل‌های تصویر، ویدیو و انیمیشن
- * هر فایل (با هر پسوند) به عنوان یک تم شناخته می‌شود
- * نام فایل نمایش داده نمی‌شود، بلکه یک نام زیبا بر اساس دسته و اندیس ساخته می‌شود
- */
 object AssetScanner {
 
     private const val TAG = "AssetScanner"
@@ -20,12 +16,8 @@ object AssetScanner {
         "mp4", "mkv", "webm", "avi", "mov", "3gp", "m4v", "flv", "wmv"
     )
 
-    // این پوشه‌ها به عنوان منبع تم اسکن می‌شوند
     private val SCAN_FOLDERS = listOf("images", "videos", "animations")
 
-    /**
-     * همه فایل‌های قابل استفاده را از assets برمی‌گرداند
-     */
     fun scanAll(context: Context): List<AssetTheme> {
         val result = mutableListOf<AssetTheme>()
 
@@ -33,14 +25,13 @@ object AssetScanner {
             try {
                 val files = context.assets.list(folder) ?: emptyArray()
                 files.forEach { fileName ->
-                    // نادیده گرفتن فایل‌های مخفی و .keep
                     if (fileName.startsWith(".")) return@forEach
 
                     val ext = fileName.substringAfterLast('.', "").lowercase()
                     val type = when (ext) {
                         in IMAGE_EXTENSIONS -> ThemeType.IMAGE
                         in VIDEO_EXTENSIONS -> ThemeType.VIDEO
-                        else -> return@forEach  // پسوند ناشناخته
+                        else -> return@forEach
                     }
 
                     val assetPath = "$folder/$fileName"
@@ -52,7 +43,7 @@ object AssetScanner {
                     result.add(
                         AssetTheme(
                             id = id,
-                            title = "", // خالی می‌مونه، UI نام زیبا می‌سازه
+                            title = "",
                             type = type,
                             assetPath = assetPath,
                             previewPath = null,
@@ -73,18 +64,12 @@ object AssetScanner {
         return result
     }
 
-    /**
-     * یک شناسه پایدار از اسم فایل (برای id یکتا) می‌سازد
-     */
     private fun stableId(fileName: String): String {
         return abs(fileName.hashCode()).toString(36)
     }
 
     private fun abs(x: Int): Int = if (x < 0) -x else x
 
-    /**
-     * دسته‌بندی خودکار بر اساس پوشه و نام فایل
-     */
     private fun detectCategory(folder: String, fileName: String): String {
         val lower = fileName.lowercase()
         return when {

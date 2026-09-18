@@ -19,19 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Animation
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.SmartButton
-import androidx.compose.material.icons.filled.VerticalAlignTop
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -58,26 +50,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import red.line.callino.data.AppSettings
 import red.line.callino.ui.components.CallButtonsContainer
-import red.line.callino.ui.theme.CallinoDanger
-import red.line.callino.ui.theme.CallinoSuccess
-import red.line.callino.ui.theme.FrostedBorder
-import red.line.callino.ui.theme.FrostedContainer
-import red.line.callino.ui.theme.FrostedGlassSolid
-import red.line.callino.ui.theme.FrostedPrimary
-import red.line.callino.ui.theme.FrostedSecondary
-import red.line.callino.ui.theme.FrostedTextMuted
-import red.line.callino.ui.theme.FrostedTextPrimary
-import red.line.callino.ui.theme.FrostedTextSecondary
-import red.line.callino.ui.theme.FrostedTint
-import red.line.callino.ui.theme.FrostedTintDeep
-import red.line.callino.ui.theme.FrostedTintLight
+import red.line.callino.ui.theme.Radius
+import red.line.callino.ui.theme.Spacing
 
 @Composable
 fun SettingsScreen(
@@ -92,34 +75,41 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = Spacing.screenHorizontal),
+        contentPadding = PaddingValues(top = Spacing.lg, bottom = Spacing.screenBottom),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
+        // ==========================================
         // Header
+        // ==========================================
         item {
             Column {
                 Text(
-                    text = "⚙ شخصی‌سازی و تنظیمات",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "تنظیمات تماسینو",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = FrostedTextPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "تنظیم جزئیات صفحه تماس، وضعیت سرویس و افکت‌های بصری",
+                    text = "شخصی‌سازی کامل صفحه تماس‌های ورودی",
                     style = MaterialTheme.typography.bodySmall,
-                    color = FrostedTextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        // Service Master Switch Group
+        // ==========================================
+        // Service Master Switch
+        // ==========================================
         item {
-            SettingsSectionCard(title = "وضعیت سرویس تماسینو", icon = Icons.Default.PhoneInTalk) {
+            SettingsSectionCard(title = "سرویس تماسینو", icon = Icons.Default.PhoneInTalk) {
                 SettingSwitchRow(
-                    title = "فعال بودن صفحه تماس تماسینو",
-                    subtitle = if (settings.isServiceEnabled) "سرویس فعال است و صفحه تم هنگام تماس نمایش داده می‌شود" else "سرویس غیرفعال است (تماس‌ها به شکل عادی سیستم نمایش داده می‌شوند)",
+                    title = "فعال بودن سرویس",
+                    subtitle = if (settings.isServiceEnabled)
+                        "صفحه اختصاصی تماسینو هنگام تماس‌های ورودی نمایش داده می‌شود"
+                    else
+                        "برای نمایش تم‌ها روی صفحه تماس، سرویس را فعال کنید",
                     checked = settings.isServiceEnabled,
                     onCheckedChange = { onUpdateSettings(settings.copy(isServiceEnabled = it)) },
                     tag = "toggle_service_master"
@@ -127,37 +117,41 @@ fun SettingsScreen(
             }
         }
 
-        // Display Info Group
+        // ==========================================
+        // Caller Info Display
+        // ==========================================
         item {
-            SettingsSectionCard(title = "اطلاعات تماس‌گیرنده", icon = Icons.Default.Visibility) {
-                // Show caller name
+            SettingsSectionCard(title = "اطلاعات نمایش تماس", icon = Icons.Default.Visibility) {
                 SettingSwitchRow(
                     title = "نمایش نام مخاطب",
-                    subtitle = "نمایش نام مخاطب بالای صفحه تماس",
+                    subtitle = "نام مخاطب روی صفحه تماس نمایش داده شود",
                     checked = settings.callerNameVisible,
                     onCheckedChange = { onUpdateSettings(settings.copy(callerNameVisible = it)) },
                     tag = "toggle_caller_name"
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(Spacing.md))
 
-                // Show caller number
                 SettingSwitchRow(
                     title = "نمایش شماره تماس",
-                    subtitle = "نمایش شماره یا خط تماس ورودی",
+                    subtitle = "شماره تماس روی صفحه تماس نمایش داده شود",
                     checked = settings.callerNumberVisible,
                     onCheckedChange = { onUpdateSettings(settings.copy(callerNumberVisible = it)) },
                     tag = "toggle_caller_number"
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
-                // Position Selector (Top, Center, Bottom)
-                Text(text = "موقعیت اطلاعات تماس:", color = FrostedTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "موقعیت اطلاعات تماس:",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(Spacing.sm))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     listOf(
                         "TOP" to "بالا (استاندارد)",
@@ -169,28 +163,33 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onUpdateSettings(settings.copy(callerInfoPosition = posKey)) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSel) FrostedPrimary else FrostedTintLight,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) FrostedPrimary else FrostedBorder)
+                            shape = RoundedCornerShape(Radius.sm),
+                            color = if (isSel) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSel) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline
+                            )
                         ) {
                             Text(
                                 text = posLabel,
-                                color = if (isSel) Color.White else FrostedTextPrimary,
+                                color = if (isSel) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(vertical = 10.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
-                // Font Size Scale
                 Text(
-                    text = "اندازه قلم نام و نوشته‌ها: ${(settings.fontSizeScale * 100).toInt()}٪",
-                    color = FrostedTextPrimary,
+                    text = "اندازه قلم نام و نوشته‌ها: ${(settings.fontSizeScale * 100).toInt()}%",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp
                 )
                 Slider(
@@ -199,57 +198,63 @@ fun SettingsScreen(
                     valueRange = 0.8f..1.3f,
                     steps = 4,
                     colors = SliderDefaults.colors(
-                        thumbColor = FrostedPrimary,
-                        activeTrackColor = FrostedPrimary,
-                        inactiveTrackColor = FrostedBorder
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.outline
                     ),
                     modifier = Modifier.fillMaxWidth().testTag("font_size_slider")
                 )
             }
         }
 
-        // Button Styles & Design Group
+        // ==========================================
+        // Button Design (with bigger preview)
+        // ==========================================
         item {
-            SettingsSectionCard(title = "🎨 طراحی دکمه‌های تماس", icon = Icons.Default.Palette) {
-                // 1. Live Preview Card
+            SettingsSectionCard(title = "طراحی دکمه‌های تماس", icon = Icons.Default.Palette) {
+                // Live Preview
                 Text(
                     text = "پیش‌نمایش زنده دکمه‌ها:",
-                    color = FrostedTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .height(220.dp)
+                        .clip(RoundedCornerShape(Radius.lg))
                         .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                            Brush.verticalGradient(
                                 listOf(Color(0xFF1E1B4B), Color(0xFF0F172A))
                             )
                         )
-                        .border(1.dp, FrostedBorder, RoundedCornerShape(18.dp))
-                        .padding(16.dp),
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline,
+                            RoundedCornerShape(Radius.lg)
+                        )
+                        .padding(Spacing.md),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Render Live Interactive Call Buttons
                     CallButtonsContainer(
                         settings = settings,
                         onAnswerClick = {},
                         onRejectClick = {}
                     )
 
-                    // Badge
                     Surface(
-                        modifier = Modifier.align(Alignment.TopEnd),
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color.Black.copy(alpha = 0.5f)
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(Spacing.xs),
+                        shape = RoundedCornerShape(Radius.xs),
+                        color = Color.Black.copy(alpha = 0.55f)
                     ) {
                         Text(
                             text = "پیش‌نمایش زنده",
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = Color.White.copy(alpha = 0.9f),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -257,16 +262,16 @@ fun SettingsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // 2. Select Style (6 Styles)
+                // Button Style (6 options)
                 Text(
                     text = "استایل دکمه‌ها:",
-                    color = FrostedTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 val styles = listOf(
                     "GLASS" to "شیشه‌ای",
@@ -277,421 +282,279 @@ fun SettingsScreen(
                     "MINIMAL" to "مینیمال"
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
                         styles.take(3).forEach { (sKey, sLabel) ->
-                            val isSel = settings.buttonStyle.equals(sKey, ignoreCase = true)
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onUpdateSettings(settings.copy(buttonStyle = sKey)) }
-                                    .testTag("style_btn_$sKey"),
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) FrostedPrimary else FrostedTintLight,
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (isSel) FrostedPrimary else FrostedBorder
-                                )
-                            ) {
-                                Text(
-                                    text = sLabel,
-                                    color = if (isSel) Color.White else FrostedTextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 9.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            StyleOption(
+                                label = sLabel,
+                                isSelected = settings.buttonStyle.equals(sKey, ignoreCase = true),
+                                onClick = { onUpdateSettings(settings.copy(buttonStyle = sKey)) },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
                         styles.drop(3).forEach { (sKey, sLabel) ->
-                            val isSel = settings.buttonStyle.equals(sKey, ignoreCase = true)
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onUpdateSettings(settings.copy(buttonStyle = sKey)) }
-                                    .testTag("style_btn_$sKey"),
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) FrostedPrimary else FrostedTintLight,
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (isSel) FrostedPrimary else FrostedBorder
-                                )
-                            ) {
-                                Text(
-                                    text = sLabel,
-                                    color = if (isSel) Color.White else FrostedTextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 9.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            StyleOption(
+                                label = sLabel,
+                                isSelected = settings.buttonStyle.equals(sKey, ignoreCase = true),
+                                onClick = { onUpdateSettings(settings.copy(buttonStyle = sKey)) },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // 3. Select Layout (4 Layouts)
+                // Button Layout (4 options)
                 Text(
-                    text = "چینش دکمه‌ها:",
-                    color = FrostedTextPrimary,
+                    text = "چیدمان دکمه‌ها:",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 val layouts = listOf(
-                    "BOTTOM_SIDES" to "پایین دو طرف",
-                    "BOTTOM_CENTER" to "وسط پایین",
+                    "BOTTOM_SIDES" to "پایین - چپ و راست",
+                    "BOTTOM_CENTER" to "پایین - کنار هم",
                     "SCREEN_SIDES" to "دو طرف صفحه",
                     "VERTICAL" to "عمودی"
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
                         layouts.take(2).forEach { (lKey, lLabel) ->
-                            val isSel = settings.buttonLayout.equals(lKey, ignoreCase = true)
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onUpdateSettings(settings.copy(buttonLayout = lKey)) }
-                                    .testTag("layout_btn_$lKey"),
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) FrostedPrimary else FrostedTintLight,
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (isSel) FrostedPrimary else FrostedBorder
-                                )
-                            ) {
-                                Text(
-                                    text = lLabel,
-                                    color = if (isSel) Color.White else FrostedTextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 9.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            StyleOption(
+                                label = lLabel,
+                                isSelected = settings.buttonLayout.equals(lKey, ignoreCase = true),
+                                onClick = { onUpdateSettings(settings.copy(buttonLayout = lKey)) },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                     ) {
                         layouts.drop(2).forEach { (lKey, lLabel) ->
-                            val isSel = settings.buttonLayout.equals(lKey, ignoreCase = true)
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { onUpdateSettings(settings.copy(buttonLayout = lKey)) }
-                                    .testTag("layout_btn_$lKey"),
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSel) FrostedPrimary else FrostedTintLight,
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (isSel) FrostedPrimary else FrostedBorder
-                                )
-                            ) {
-                                Text(
-                                    text = lLabel,
-                                    color = if (isSel) Color.White else FrostedTextPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = 9.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            StyleOption(
+                                label = lLabel,
+                                isSelected = settings.buttonLayout.equals(lKey, ignoreCase = true),
+                                onClick = { onUpdateSettings(settings.copy(buttonLayout = lKey)) },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // 4. Select Size (3 Sizes)
+                // Button Size (3 options)
                 Text(
                     text = "اندازه دکمه‌ها:",
-                    color = FrostedTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     listOf(
                         "SMALL" to "کوچک",
                         "MEDIUM" to "متوسط",
                         "LARGE" to "بزرگ"
                     ).forEach { (sizeKey, sizeLabel) ->
-                        val isSel = settings.buttonSize.equals(sizeKey, ignoreCase = true)
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onUpdateSettings(settings.copy(buttonSize = sizeKey)) }
-                                .testTag("size_btn_$sizeKey"),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSel) FrostedPrimary else FrostedTintLight,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isSel) FrostedPrimary else FrostedBorder
-                            )
-                        ) {
-                            Text(
-                                text = sizeLabel,
-                                color = if (isSel) Color.White else FrostedTextPrimary,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 9.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
+                        StyleOption(
+                            label = sizeLabel,
+                            isSelected = settings.buttonSize.equals(sizeKey, ignoreCase = true),
+                            onClick = { onUpdateSettings(settings.copy(buttonSize = sizeKey)) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // 5. Emojis (Answer & Reject)
-                val emojiPresets = listOf("📞", "💚", "❤️", "😎", "✨", "🔥", "❌", "🚫", "👋")
-
+                // Emojis
                 Text(
-                    text = "ایموجی دکمه پاسخ:",
-                    color = FrostedTextPrimary,
+                    text = "آیکون دکمه پاسخ:",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.sm))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
-                    emojiPresets.take(5).forEach { em ->
+                    listOf("📞", "✔️", "☎️", "💚", "🤙").forEach { em ->
                         val isSel = settings.answerEmoji == em
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onUpdateSettings(settings.copy(answerEmoji = em)) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSel) CallinoSuccess.copy(alpha = 0.25f) else FrostedTintLight,
+                            shape = RoundedCornerShape(Radius.xs),
+                            color = if (isSel) Color(0xFF10B981).copy(alpha = 0.25f)
+                            else MaterialTheme.colorScheme.surfaceVariant,
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isSel) CallinoSuccess else FrostedBorder
+                                if (isSel) Color(0xFF10B981) else MaterialTheme.colorScheme.outline
                             )
                         ) {
                             Text(
                                 text = em,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                fontSize = 20.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 Text(
-                    text = "ایموجی دکمه رد تماس:",
-                    color = FrostedTextPrimary,
+                    text = "آیکون دکمه رد تماس:",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.sm))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
-                    emojiPresets.takeLast(5).forEach { em ->
+                    listOf("❌", "🚫", "✖️", "📵", "🔕").forEach { em ->
                         val isSel = settings.rejectEmoji == em
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onUpdateSettings(settings.copy(rejectEmoji = em)) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSel) CallinoDanger.copy(alpha = 0.25f) else FrostedTintLight,
+                            shape = RoundedCornerShape(Radius.xs),
+                            color = if (isSel) Color(0xFFEF4444).copy(alpha = 0.25f)
+                            else MaterialTheme.colorScheme.surfaceVariant,
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (isSel) CallinoDanger else FrostedBorder
+                                if (isSel) Color(0xFFEF4444) else MaterialTheme.colorScheme.outline
                             )
                         ) {
                             Text(
                                 text = em,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                fontSize = 20.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.xl))
 
-                // 6. Text Customization (Presets & Custom Input)
+                // Custom Texts
                 Text(
                     text = "متن دکمه پاسخ:",
-                    color = FrostedTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf("پاسخ", "جواب میدم", "بفرمایید").forEach { pText ->
-                        val isSel = settings.answerText == pText
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onUpdateSettings(settings.copy(answerText = pText)) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSel) FrostedPrimary else FrostedTintLight,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isSel) FrostedPrimary else FrostedBorder
-                            )
-                        ) {
-                            Text(
-                                text = pText,
-                                color = if (isSel) Color.White else FrostedTextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 7.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 OutlinedTextField(
                     value = settings.answerText,
                     onValueChange = { onUpdateSettings(settings.copy(answerText = it)) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("متن دلخواه پاسخ") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = FrostedPrimary,
-                        unfocusedBorderColor = FrostedBorder
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(Radius.sm)
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 Text(
                     text = "متن دکمه رد تماس:",
-                    color = FrostedTextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf("رد تماس", "بعداً تماس میگیرم", "مشغولم").forEach { rText ->
-                        val isSel = settings.rejectText == rText
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { onUpdateSettings(settings.copy(rejectText = rText)) },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSel) Color(0xFFEF4444) else FrostedTintLight,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isSel) Color(0xFFEF4444) else FrostedBorder
-                            )
-                        ) {
-                            Text(
-                                text = rText,
-                                color = if (isSel) Color.White else FrostedTextPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(vertical = 7.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 OutlinedTextField(
                     value = settings.rejectText,
                     onValueChange = { onUpdateSettings(settings.copy(rejectText = it)) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("متن دلخواه رد تماس") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFEF4444),
-                        unfocusedBorderColor = FrostedBorder
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(Radius.sm)
                 )
             }
         }
 
-        // Visual Effects Group (Dim, Blur, Glow, Particles, Animations)
+        // ==========================================
+        // Visual Effects
+        // ==========================================
         item {
-            SettingsSectionCard(title = "افکت‌های بصری و پس‌زمینه", icon = Icons.Default.Opacity) {
+            SettingsSectionCard(title = "افکت‌های بصری", icon = Icons.Default.Opacity) {
                 SettingSwitchRow(
-                    title = "انیمیشن‌های زنده و امواج",
-                    subtitle = "پخش افکت‌های موج و نبض نوری در تماس",
+                    title = "انیمیشن‌ها",
+                    subtitle = "افکت‌های پویا و متحرک روی صفحه تماس",
                     checked = settings.animationsEnabled,
                     onCheckedChange = { onUpdateSettings(settings.copy(animationsEnabled = it)) },
                     tag = "toggle_animations"
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 SettingSwitchRow(
-                    title = "ذرات معلق نورانی (Particles)",
-                    subtitle = "نمایش ذرات نورانی و درخشان شناور در صفحه تماس",
+                    title = "ذرات نورانی شناور",
+                    subtitle = "ذرات کوچک نورانی روی پس‌زمینه تماس",
                     checked = settings.enableParticles,
                     onCheckedChange = { onUpdateSettings(settings.copy(enableParticles = it)) },
                     tag = "toggle_particles"
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 SettingSwitchRow(
-                    title = "هاله نورانی (Glow Effect)",
-                    subtitle = "درخشش نئونی و نور رنگی دور دکمه‌های پاسخ و رد تماس",
+                    title = "افکت درخشش (Glow)",
+                    subtitle = "درخشش نرم دور کارت اطلاعات تماس",
                     checked = settings.enableGlow,
                     onCheckedChange = { onUpdateSettings(settings.copy(enableGlow = it)) },
                     tag = "toggle_glow"
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 SettingSwitchRow(
-                    title = "مات‌کردن تصویر یا ویدئو (Blur)",
-                    subtitle = "اعمال افکت شیشه‌ای و محو روی پس‌زمینه",
+                    title = "تاری پس‌زمینه (Blur)",
+                    subtitle = "محو کردن پس‌زمینه تماس",
                     checked = settings.enableBlur,
                     onCheckedChange = { onUpdateSettings(settings.copy(enableBlur = it)) },
                     tag = "toggle_blur"
                 )
 
                 if (settings.enableBlur) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(Spacing.md))
                     Text(
-                        text = "شدت مات‌سازی: ${settings.blurAmount.toInt()} dp",
-                        color = FrostedTextPrimary,
+                        text = "مقدار تاری: ${settings.blurAmount.toInt()} dp",
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 13.sp
                     )
                     Slider(
@@ -699,20 +562,19 @@ fun SettingsScreen(
                         onValueChange = { onUpdateSettings(settings.copy(blurAmount = it)) },
                         valueRange = 4f..30f,
                         colors = SliderDefaults.colors(
-                            thumbColor = FrostedPrimary,
-                            activeTrackColor = FrostedPrimary,
-                            inactiveTrackColor = FrostedBorder
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.outline
                         ),
-                        modifier = Modifier.fillMaxWidth().testTag("blur_amount_slider")
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
-                // Dim Level Slider
                 Text(
-                    text = "میزان تاریکی پس‌زمینه (Dim): ${(settings.backgroundDim * 100).toInt()}٪",
-                    color = FrostedTextPrimary,
+                    text = "شدت تاری پس‌زمینه (Dim): ${(settings.backgroundDim * 100).toInt()}%",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp
                 )
                 Slider(
@@ -720,109 +582,118 @@ fun SettingsScreen(
                     onValueChange = { onUpdateSettings(settings.copy(backgroundDim = it)) },
                     valueRange = 0.0f..0.8f,
                     colors = SliderDefaults.colors(
-                        thumbColor = FrostedPrimary,
-                        activeTrackColor = FrostedPrimary,
-                        inactiveTrackColor = FrostedBorder
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.outline
                     ),
-                    modifier = Modifier.fillMaxWidth().testTag("dim_slider")
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
-        // System & Permissions Shortcut
+        // ==========================================
+        // System & Haptic
+        // ==========================================
         item {
-            SettingsSectionCard(title = "دسترسی‌ها و عملکرد", icon = Icons.Default.Security) {
+            SettingsSectionCard(title = "سیستم و لرزش", icon = Icons.Default.Security) {
                 SettingSwitchRow(
-                    title = "بازخورد لمسی دکمه‌ها (Haptic Feedback)",
-                    subtitle = "لرزش کوتاه هنگام لمس دکمه‌های پاسخ و رد تماس",
+                    title = "لرزش لمسی (Haptic)",
+                    subtitle = "بازخورد لرزشی هنگام لمس دکمه‌ها",
                     checked = settings.enableHaptic,
                     onCheckedChange = { onUpdateSettings(settings.copy(enableHaptic = it)) },
                     tag = "toggle_haptic"
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
 
                 SettingSwitchRow(
-                    title = "لرزش (ویبره) هنگام تماس",
-                    subtitle = "هماهنگ با ریتم تماس ورودی",
+                    title = "لرزش هنگام تماس",
+                    subtitle = "لرزش گوشی هنگام دریافت تماس",
                     checked = settings.vibrateOnCall,
                     onCheckedChange = { onUpdateSettings(settings.copy(vibrateOnCall = it)) },
                     tag = "toggle_vibrate"
                 )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Button(
-                    onClick = onNavigateToGuide,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FrostedTint, contentColor = FrostedPrimary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, FrostedBorder)
-                ) {
-                    Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("مشاهده و بررسی وضعیت دسترسی‌ها", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
             }
         }
 
-        // Reset Settings Button with Confirmation Dialog
+        // ==========================================
+        // Reset
+        // ==========================================
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = FrostedGlassSolid),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(Radius.lg),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Color(0xFFEF4444).copy(alpha = 0.4f)
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Spacing.lg)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFEF4444))
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444)
+                        )
+                        Spacer(Modifier.width(Spacing.sm))
                         Text(
-                            text = "بازگردانی تنظیمات به حالت اولیه",
+                            text = "بازنشانی تنظیمات",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFEF4444)
                         )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(Modifier.height(Spacing.sm))
                     Text(
-                        text = "تمام تنظیمات شخصی‌سازی به مقادیر اولیه کارخانه باز خواهند گشت.",
+                        text = "تمام تنظیمات به حالت پیش‌فرض باز می‌گردد.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = FrostedTextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(Modifier.height(Spacing.lg))
                     Button(
                         onClick = { showResetDialog = true },
-                        modifier = Modifier.fillMaxWidth().height(48.dp).testTag("reset_settings_btn"),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444), contentColor = Color.White)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("reset_settings_btn"),
+                        shape = RoundedCornerShape(Radius.sm),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFEF4444),
+                            contentColor = Color.White
+                        )
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("بازگردانی تنظیمات", fontWeight = FontWeight.Bold)
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text("بازنشانی تنظیمات", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
 
-    // Confirmation Dialog for Reset Settings
+    // Reset Confirmation Dialog
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
             title = {
                 Text(
-                    text = "آیا مطمئن هستید؟",
-                    color = FrostedTextPrimary,
+                    text = "تأیید بازنشانی",
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "تنظیمات شخصی‌سازی‌شده به حالت پیش‌فرض بازگردانده خواهند شد.",
-                    color = FrostedTextSecondary
+                    text = "آیا مطمئن هستید که می‌خواهید تمام تنظیمات را به حالت پیش‌فرض بازگردانید؟",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
@@ -832,18 +703,18 @@ fun SettingsScreen(
                         showResetDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(Radius.sm)
                 ) {
-                    Text("بله، بازگردانی شود", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("بله، بازنشانی کن", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResetDialog = false }) {
-                    Text("انصراف", color = FrostedTextSecondary)
+                    Text("انصراف", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
-            containerColor = FrostedGlassSolid,
-            shape = RoundedCornerShape(24.dp)
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(Radius.lg)
         )
     }
 }
@@ -856,31 +727,41 @@ private fun SettingsSectionCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = FrostedGlassSolid),
-        border = androidx.compose.foundation.BorderStroke(1.dp, FrostedBorder),
+        shape = RoundedCornerShape(Radius.lg),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(FrostedTintLight),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = icon, contentDescription = null, tint = FrostedPrimary, modifier = Modifier.size(18.dp))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(Modifier.width(Spacing.md))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = FrostedTextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(Modifier.height(Spacing.lg))
             content()
         }
     }
@@ -900,19 +781,58 @@ private fun SettingSwitchRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, color = FrostedTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text(text = subtitle, color = FrostedTextSecondary, fontSize = 11.sp)
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp
+            )
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = FrostedPrimary,
-                uncheckedThumbColor = FrostedTextSecondary,
-                uncheckedTrackColor = FrostedTintLight
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
             ),
             modifier = Modifier.testTag(tag)
+        )
+    }
+}
+
+@Composable
+private fun StyleOption(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(Radius.sm),
+        color = if (isSelected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surfaceVariant,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outline
+        )
+    ) {
+        Text(
+            text = label,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurface,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(vertical = 10.dp),
+            textAlign = TextAlign.Center
         )
     }
 }
