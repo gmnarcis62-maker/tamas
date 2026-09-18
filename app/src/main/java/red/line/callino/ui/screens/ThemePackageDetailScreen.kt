@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import red.line.callino.AssetImage
 import red.line.callino.data.CallTheme
 import red.line.callino.data.ThemePackage
 import red.line.callino.data.ThemeType
@@ -204,7 +205,7 @@ fun ThemePackageDetailScreen(
                                 if (themePackage.coverImage.isNotBlank()) {
                                     AsyncImage(
                                         model = ImageRequest.Builder(LocalContext.current)
-                                            .data("file:///android_asset/${themePackage.coverImage}")
+                                            .data(AssetImage(themePackage.coverImage))
                                             .crossfade(true)
                                             .build(),
                                         contentDescription = themePackage.titleFa,

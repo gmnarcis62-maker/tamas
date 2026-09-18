@@ -24,7 +24,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MyApplication">
+        android:theme="@style/Theme.MyApplication"
+		android:name=".CallinoApp"
+        android:allowBackup="true"
+        ... (بقیه attribute های قبلی)>
 
         <activity
             android:name=".MainActivity"

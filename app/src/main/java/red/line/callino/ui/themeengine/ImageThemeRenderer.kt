@@ -11,10 +11,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import red.line.callino.AssetImage
 import red.line.callino.data.CallTheme
+import red.line.callino.data.ThemeType
 
 /**
  * ImageThemeRenderer - Renders custom user images or preset static image themes.
+ *
+ * برای تم‌های IMAGE و ANIMATION از AssetImage استفاده می‌کنیم تا Coil
+ * مستقیم از AssetManager لود کنه. برای CUSTOM از URI کاربر استفاده می‌شه.
  */
 @Composable
 fun ImageThemeRenderer(
@@ -22,6 +27,7 @@ fun ImageThemeRenderer(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val uri = theme.mediaUri
 
     Box(
         modifier = modifier
@@ -29,10 +35,15 @@ fun ImageThemeRenderer(
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        if (!theme.mediaUri.isNullOrBlank()) {
+        if (!uri.isNullOrBlank()) {
+            val data: Any = when (theme.type) {
+                ThemeType.IMAGE, ThemeType.ANIMATION -> AssetImage(uri)
+                ThemeType.VIDEO -> uri
+                ThemeType.CUSTOM -> uri
+            }
             AsyncImage(
                 model = ImageRequest.Builder(context)
-                    .data(theme.mediaUri)
+                    .data(data)
                     .crossfade(true)
                     .build(),
                 contentDescription = theme.titleFa,
