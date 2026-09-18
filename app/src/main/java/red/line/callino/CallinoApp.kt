@@ -5,6 +5,7 @@ import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.DataSource
+import coil.decode.ImageSource
 import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.fetch.SourceResult
@@ -31,9 +32,10 @@ class AssetImageFetcher(
 
     override suspend fun fetch(): FetchResult {
         val stream = context.assets.open(data.path)
+        val source = ImageSource(stream.source().buffer(), context)
         return SourceResult(
-            source = stream.source().buffer(),
-            mimeType = options.mimeType,
+            source = source,
+            mimeType = null,
             dataSource = DataSource.DISK
         )
     }
