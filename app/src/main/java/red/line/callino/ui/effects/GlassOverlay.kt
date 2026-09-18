@@ -36,9 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -107,12 +105,11 @@ fun GradientGlassOverlay(
 
 /**
  * CallerInfoGlassCard - Premium Glassmorphism Card for incoming caller details.
- * Features:
- * - Animated slide-in from top with smooth fade-in
- * - Ambient avatar glow & pulse rings
- * - Frosted blur background card
- * - Relationship badge support
- * - Dynamic typography scaling
+ *
+ * رفتار جدید:
+ * - اگر در حالت پیش‌نمایش هستیم و نامی وجود ندارد، فقط لوگو و بج "پیش‌نمایش تم" نمایش داده می‌شود
+ * - اگر نام خالی باشد، هیچ متنی برای نام نمایش داده نمی‌شود
+ * - اگر شماره خالی باشد، هیچ متنی برای شماره نمایش داده نمی‌شود
  */
 @Composable
 fun CallerInfoGlassCard(
@@ -132,6 +129,10 @@ fun CallerInfoGlassCard(
         isVisible = true
     }
 
+    // آیا نام قابل نمایش داریم؟ (نه خالی، نه فقط فاصله)
+    val hasName = callerName.isNotBlank()
+    val hasNumber = callerNumber.isNotBlank()
+
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(
@@ -142,7 +143,9 @@ fun CallerInfoGlassCard(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
         ) {
             // Caller Avatar with Glowing Border & Pulse
             Box(contentAlignment = Alignment.Center) {
@@ -166,14 +169,17 @@ fun CallerInfoGlassCard(
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
-                                listOf(CallinoPrimary.copy(alpha = 0.85f), CallinoSecondary.copy(alpha = 0.85f))
+                                listOf(
+                                    CallinoPrimary.copy(alpha = 0.85f),
+                                    CallinoSecondary.copy(alpha = 0.85f)
+                                )
                             )
                         )
                         .border(2.5.dp, Color.White.copy(alpha = 0.85f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isPreviewMode) {
-                        // In Preview Mode: show stylized Callino emblem / icon without personal photo
+                        // در حالت پیش‌نمایش: فقط لوگو
                         Icon(
                             imageVector = Icons.Default.PhoneInTalk,
                             contentDescription = "پیش‌نمایش تماسینو",
@@ -186,8 +192,10 @@ fun CallerInfoGlassCard(
                                 .data(contactPhotoUri)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = callerName,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -217,7 +225,7 @@ fun CallerInfoGlassCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(vertical = 18.dp, horizontal = 16.dp)
                 ) {
-                    // Preview Badge or Relationship Badge
+                    // Preview Badge یا Relationship Badge
                     if (isPreviewMode) {
                         Surface(
                             color = CallinoPrimary.copy(alpha = 0.4f),
@@ -232,7 +240,6 @@ fun CallerInfoGlassCard(
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     } else if (!relationshipLabel.isNullOrBlank()) {
                         Surface(
                             color = CallinoPrimary.copy(alpha = 0.35f),
@@ -247,41 +254,43 @@ fun CallerInfoGlassCard(
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Display Name (In Preview Mode: "تماسینو")
-                    val displayName = if (isPreviewMode) "تماسینو" else callerName
-                    if (settings.callerNameVisible || isPreviewMode) {
+                    // ✅ نمایش نام فقط اگر واقعاً نامی وجود داشته باشد (نه در پیش‌نمایش)
+                    if (!isPreviewMode && hasName && settings.callerNameVisible) {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = displayName,
+                            text = callerName,
                             color = Color.White,
                             fontSize = (24 * settings.fontSizeScale).sp,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
                             maxLines = 1
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
-                    // Display Number (In Preview Mode: hidden or preview subtitle)
-                    if (!isPreviewMode && settings.callerNumberVisible && !isCallAnswered && callerNumber.isNotBlank()) {
+                    // ✅ نمایش شماره فقط اگر واقعاً شماره‌ای وجود داشته باشد
+                    if (!isPreviewMode && hasNumber && settings.callerNumberVisible && !isCallAnswered) {
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = callerNumber,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = (15 * settings.fontSizeScale).sp,
                             letterSpacing = 1.2.sp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Active Call Status / Duration Indicator
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // وضعیت تماس / مدت زمان
                     Surface(
-                        color = if (isCallAnswered) CallinoSuccess.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.35f),
+                        color = if (isCallAnswered) CallinoSuccess.copy(alpha = 0.3f)
+                        else Color.Black.copy(alpha = 0.35f),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(
                             0.8.dp,
-                            if (isCallAnswered) CallinoSuccess else Color.White.copy(alpha = 0.25f)
+                            if (isCallAnswered) CallinoSuccess
+                            else Color.White.copy(alpha = 0.25f)
                         )
                     ) {
                         Row(
@@ -311,7 +320,8 @@ fun CallerInfoGlassCard(
                                 )
                             } else {
                                 Text(
-                                    text = if (isPreviewMode) "پیش‌نمایش تم" else "تماس ورودی...",
+                                    text = if (isPreviewMode) "پیش‌نمایش تم"
+                                    else "تماس ورودی...",
                                     color = Color.White,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium

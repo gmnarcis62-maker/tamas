@@ -15,7 +15,8 @@ data class CallTheme(
     val isPremium: Boolean = false,
     val isDefault: Boolean = false,
     val category: String = "عمومی",
-    val descriptionFa: String = ""
+    val descriptionFa: String = "",
+    val effect: EffectType = EffectType.NONE
 )
 
 val DefaultCallTheme = CallTheme(
@@ -27,7 +28,8 @@ val DefaultCallTheme = CallTheme(
     isPremium = false,
     isDefault = true,
     category = "پیش‌فرض",
-    descriptionFa = "پوسته زنده و روان با افکت‌های نوری زیبا"
+    descriptionFa = "پوسته زنده و روان با افکت‌های نوری زیبا",
+    effect = EffectType.PULSE_GLOW
 )
 
 enum class ThemeType {
@@ -44,7 +46,7 @@ data class ContactTheme(
     val contactNumber: String,
     val themeId: String,
     val customPhotoUri: String? = null,
-    val relationshipLabel: String? = null, // مادر، پدر، همسر، دوست، همکار
+    val relationshipLabel: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -53,7 +55,7 @@ data class UserMedia(
     @PrimaryKey val id: String,
     val title: String,
     val uri: String,
-    val mediaType: ThemeType, // IMAGE or VIDEO
+    val mediaType: ThemeType,
     val durationMs: Long = 0,
     val addedAt: Long = System.currentTimeMillis(),
     val isSelectedForCall: Boolean = false
@@ -63,7 +65,7 @@ data class VipStatus(
     val isVip: Boolean = false,
     val purchaseDate: Long = 0L,
     val expiryDate: Long = 0L,
-    val vipType: String = "FREE" // FREE, MONTHLY, THREE_MONTHS, LIFETIME, PROMO
+    val vipType: String = "FREE"
 )
 
 sealed class DownloadState {
@@ -84,19 +86,20 @@ data class ThemePackage(
     val category: String = "لوکس 💎",
     val themeIds: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
-    val downloadStatus: String = "AVAILABLE" // AVAILABLE, DOWNLOADING, DOWNLOADED, LOCKED
+    val downloadStatus: String = "AVAILABLE"
 )
 
 data class AssetTheme(
     val id: String,
     val title: String,
-    val type: ThemeType, // IMAGE, VIDEO, ANIMATION
+    val type: ThemeType,
     val assetPath: String,
     val previewPath: String? = null,
     val category: String = "طبیعت 🌿",
     val isVip: Boolean = false,
     val descriptionFa: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val effect: EffectType = EffectType.NONE
 ) {
     fun toCallTheme(): CallTheme {
         val mediaUri = when (type) {
@@ -119,7 +122,8 @@ data class AssetTheme(
             mediaUri = mediaUri,
             isPremium = isVip,
             category = category,
-            descriptionFa = if (descriptionFa.isNotBlank()) descriptionFa else "پوسته پیش‌فرض داخلی تماسینو"
+            descriptionFa = if (descriptionFa.isNotBlank()) descriptionFa else "پوسته پیش‌فرض داخلی تماسینو",
+            effect = effect
         )
     }
 }
@@ -128,11 +132,11 @@ data class AppSettings(
     val isServiceEnabled: Boolean = false,
     val callerNameVisible: Boolean = true,
     val callerNumberVisible: Boolean = true,
-    val callerInfoPosition: String = "TOP", // TOP, CENTER, BOTTOM
+    val callerInfoPosition: String = "TOP",
     val fontSizeScale: Float = 1.0f,
-    val buttonStyle: String = "GLASS", // GLASS, CRYSTAL, NEON, ROUNDED, PILL, MINIMAL
-    val buttonLayout: String = "BOTTOM_SIDES", // BOTTOM_SIDES, BOTTOM_CENTER, SCREEN_SIDES, VERTICAL
-    val buttonSize: String = "MEDIUM", // SMALL, MEDIUM, LARGE
+    val buttonStyle: String = "GLASS",
+    val buttonLayout: String = "BOTTOM_SIDES",
+    val buttonSize: String = "MEDIUM",
     val answerText: String = "پاسخ",
     val rejectText: String = "رد تماس",
     val answerEmoji: String = "📞",

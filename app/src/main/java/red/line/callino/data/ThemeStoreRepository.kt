@@ -30,7 +30,13 @@ class ThemeStoreRepository(private val context: Context) {
             "عاشقانه ❤️",
             "فضایی 🚀",
             "نئون 🌌",
-            "سایر"
+            "انتزاعی 🎨",
+            "فانتزی 🐉",
+            "حیوانات 🐾",
+            "مینیمال ◾",
+            "کلاسیک 🎩",
+            "ایرانی 🏛",
+            "مدرن 🎯"
         )
 
         @Volatile
@@ -60,80 +66,85 @@ class ThemeStoreRepository(private val context: Context) {
             val downloadedIds = getDownloadedPackageIds()
             val list = mutableListOf<ThemePackage>()
 
-            Log.d(TAG, "=== Starting to load $JSON_FILE ===")
+            Log.d(TAG, "=== شروع بارگذاری پکیج‌های فروشگاه ===")
 
-            context.assets.open(JSON_FILE).use { inputStream ->
-                val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
-                val jsonStr = reader.readText()
+            // ۱. بارگذاری از JSON (پکیج‌های دست‌ساز)
+            try {
+                context.assets.open(JSON_FILE).use { inputStream ->
+                    val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
+                    val jsonStr = reader.readText()
+                    val jsonArray = JSONArray(jsonStr)
 
-                Log.d(TAG, "JSON file size: ${jsonStr.length} chars")
-
-                val jsonArray = JSONArray(jsonStr)
-                Log.d(TAG, "Found ${jsonArray.length()} packages in JSON")
-
-                for (i in 0 until jsonArray.length()) {
-                    val obj = jsonArray.getJSONObject(i)
-                    val id = obj.getString("id")
-                    val isDownloaded = downloadedIds.contains(id)
-                    val isVip = obj.optBoolean("isVip", false)
-
-                    val themeIdsList = mutableListOf<String>()
-                    if (obj.has("themeIds")) {
-                        val idsArray = obj.getJSONArray("themeIds")
-                        for (j in 0 until idsArray.length()) {
-                            themeIdsList.add(idsArray.getString(j))
-                        }
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(i)
+                        val pkg = parsePackage(obj, downloadedIds)
+                        if (pkg != null) list.add(pkg)
                     }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "خطا در خواندن JSON، فقط از داده‌های تولیدی استفاده می‌شود: ${e.message}")
+            }
 
-                    val tagsList = mutableListOf<String>()
-                    if (obj.has("tags")) {
-                        val tagsArray = obj.getJSONArray("tags")
-                        for (j in 0 until tagsArray.length()) {
-                            tagsList.add(tagsArray.getString(j))
-                        }
-                    }
-
-                    val status = if (isDownloaded) "DOWNLOADED" else "AVAILABLE"
-
-                    val pkg = ThemePackage(
-                        id = id,
-                        titleFa = obj.getString("titleFa"),
-                        description = obj.optString("description", ""),
-                        coverImage = obj.optString("coverImage", ""),
-                        themesCount = obj.optInt("themesCount", themeIdsList.size.coerceAtLeast(1)),
-                        isVip = isVip,
-                        price = obj.optString("price", ""),
-                        category = obj.optString("category", ""),
-                        themeIds = themeIdsList,
-                        tags = tagsList,
-                        downloadStatus = status
+            // ۲. تولید ۱۲۰+ پکیج حرفه‌ای
+            val generated = StoreThemeGenerator.generate()
+            generated.forEach { pkg ->
+                val isDownloaded = downloadedIds.contains(pkg.id)
+                list.add(
+                    pkg.copy(
+                        downloadStatus = if (isDownloaded) "DOWNLOADED" else "AVAILABLE"
                     )
-                    list.add(pkg)
-                    Log.d(TAG, "Loaded package: $id")
+                )
+            }
+
+            Log.d(TAG, "=== مجموع ${list.size} پکیج بارگذاری شد ===")
+            _packages.value = list
+
+        } catch (e: Exception) {
+            Log.e(TAG, "خطای کلی در بارگذاری: ${e.message}", e)
+        }
+    }
+
+    private fun parsePackage(
+        obj: org.json.JSONObject,
+        downloadedIds: Set<String>
+    ): ThemePackage? {
+        return try {
+            val id = obj.getString("id")
+            val isVip = obj.optBoolean("isVip", false)
+            val isDownloaded = downloadedIds.contains(id)
+
+            val themeIdsList = mutableListOf<String>()
+            if (obj.has("themeIds")) {
+                val idsArray = obj.getJSONArray("themeIds")
+                for (j in 0 until idsArray.length()) {
+                    themeIdsList.add(idsArray.getString(j))
                 }
             }
 
-            Log.d(TAG, "=== Loaded ${list.size} packages ===")
-            _packages.value = list
-
-            // پیام دیباگ
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(
-                    context,
-                    "✅ ${list.size} پکیج لود شد",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+            val tagsList = mutableListOf<String>()
+            if (obj.has("tags")) {
+                val tagsArray = obj.getJSONArray("tags")
+                for (j in 0 until tagsArray.length()) {
+                    tagsList.add(tagsArray.getString(j))
+                }
             }
+
+            ThemePackage(
+                id = id,
+                titleFa = obj.getString("titleFa"),
+                description = obj.optString("description", ""),
+                coverImage = obj.optString("coverImage", ""),
+                themesCount = obj.optInt("themesCount", themeIdsList.size.coerceAtLeast(1)),
+                isVip = isVip,
+                price = obj.optString("price", if (isVip) "ویژه اشتراک VIP" else "رایگان"),
+                category = obj.optString("category", "عمومی"),
+                themeIds = themeIdsList,
+                tags = tagsList,
+                downloadStatus = if (isDownloaded) "DOWNLOADED" else "AVAILABLE"
+            )
         } catch (e: Exception) {
-            Log.e(TAG, "FATAL: Error reading $JSON_FILE: ${e.message}", e)
-
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(
-                    context,
-                    "❌ خطا: ${e.message}",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-            }
+            Log.e(TAG, "خطا در پارس یک پکیج: ${e.message}")
+            null
         }
     }
 
@@ -175,7 +186,6 @@ class ThemeStoreRepository(private val context: Context) {
                 _downloadProgressMap.value = updatedProgress
 
                 loadPackages()
-
                 onComplete?.invoke(true)
             } catch (e: Exception) {
                 Log.e(TAG, "Download failed for $packageId: ${e.message}", e)

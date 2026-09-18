@@ -14,6 +14,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.ContextCompat
 import red.line.callino.ui.MainScreen
 import red.line.callino.ui.theme.MyApplicationTheme
@@ -44,8 +47,11 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme {
-                MainScreen()
+            // 🔄 راست‌چین کردن کل برنامه
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                MyApplicationTheme {
+                    MainScreen()
+                }
             }
         }
     }

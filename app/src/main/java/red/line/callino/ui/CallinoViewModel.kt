@@ -1,7 +1,7 @@
 package red.line.callino.ui
 
 import android.app.Application
-import android.net.Uri
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +37,7 @@ data class CallinoUiState(
     val previewingTheme: CallTheme? = null,
     val isSimulatingCall: Boolean = false,
     val isPreviewMode: Boolean = false,
-    val simulatorCallerName: String = "تماسینو",
+    val simulatorCallerName: String = "",
     val simulatorCallerNumber: String = "",
     val simulatorRelationship: String? = "پیش‌نمایش تم"
 )
@@ -47,6 +47,11 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
     private val vipManager = LocalVipManager.getInstance(application)
     private val themeStoreRepo = ThemeStoreRepository.getInstance(application)
 
+    // 🔑 SharedPreferences برای همگام‌سازی با IncomingCallReceiver
+    private val servicePrefs = application.getSharedPreferences(
+        "callino_prefs", Context.MODE_PRIVATE
+    )
+
     private val _simulatingState = MutableStateFlow(
         SimulatingState(isSimulating = false)
     )
@@ -55,7 +60,7 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
         val isSimulating: Boolean = false,
         val isPreviewMode: Boolean = false,
         val customTheme: CallTheme? = null,
-        val callerName: String = "تماسینو",
+        val callerName: String = "",
         val callerNumber: String = "",
         val relationship: String? = "پیش‌نمایش تم"
     )
@@ -79,6 +84,9 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
             ?: themes.firstOrNull()
             ?: red.line.callino.data.DefaultCallTheme
 
+        // 🔑 همگام‌سازی خودکار با SharedPreferences هر بار که state تغییر می‌کنه
+        syncServiceFlagToPrefs(settings.isServiceEnabled)
+
         CallinoUiState(
             themes = themes,
             assetThemes = assetThemes,
@@ -101,6 +109,21 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CallinoUiState()
     )
+
+    /**
+     * 🔑 هر بار که settings تغییر می‌کنه، مقدار isServiceEnabled رو
+     * در SharedPreferences "callino_prefs" هم می‌نویسیم تا
+     * IncomingCallReceiver اون رو ببینه
+     */
+    private fun syncServiceFlagToPrefs(enabled: Boolean) {
+        val currentPrefsValue = servicePrefs.getBoolean("isServiceEnabled", false)
+        if (currentPrefsValue != enabled) {
+            servicePrefs.edit()
+                .putBoolean("isServiceEnabled", enabled)
+                .apply()
+            android.util.Log.d("CallinoViewModel", "Synced service flag to prefs: $enabled")
+        }
+    }
 
     private data class StoreCombinedData(
         val themes: List<CallTheme>,
@@ -196,7 +219,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
                 )
                 repository.addUserMedia(media)
 
-                // Also create a CallTheme for it
                 val theme = CallTheme(
                     id = "theme_custom_$mediaId",
                     titleFa = title,
@@ -223,7 +245,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
     fun setMediaAsActiveTheme(media: UserMedia) {
         viewModelScope.launch {
             val themeId = "theme_custom_${media.id}"
-            // Ensure theme exists
             val customTheme = CallTheme(
                 id = themeId,
                 titleFa = media.title,
@@ -242,6 +263,13 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val current = uiState.value.settings
             repository.updateSettings(current.copy(isServiceEnabled = enabled))
+
+            // 🔑 همگام‌سازی فوری با SharedPreferences برای IncomingCallReceiver
+            servicePrefs.edit()
+                .putBoolean("isServiceEnabled", enabled)
+                .apply()
+
+            android.util.Log.d("CallinoViewModel", "setServiceEnabled($enabled) - synced to prefs")
         }
     }
 
@@ -250,7 +278,7 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
             isSimulating = true,
             isPreviewMode = true,
             customTheme = theme,
-            callerName = "تماسینو",
+            callerName = "",
             callerNumber = "",
             relationship = "پیش‌نمایش تم"
         )
@@ -258,9 +286,9 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
 
     fun startCallSimulation(
         theme: CallTheme? = null,
-        callerName: String = "مهندس مهدی رضایی",
-        callerNumber: String = "۰۹۱۲۳۴۵۶۷۸۹",
-        relationship: String? = "ردلاین سافت البرز",
+        callerName: String = "",
+        callerNumber: String = "",
+        relationship: String? = null,
         isPreviewMode: Boolean = false
     ) {
         _simulatingState.value = SimulatingState(
