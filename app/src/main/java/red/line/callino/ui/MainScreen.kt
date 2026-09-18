@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Contacts
@@ -25,11 +22,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
@@ -38,10 +33,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,7 +48,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -80,32 +71,26 @@ import red.line.callino.ui.screens.ThemesScreen
 import red.line.callino.ui.screens.VipScreen
 import red.line.callino.ui.theme.FrostedBg
 import red.line.callino.ui.theme.FrostedBorder
-import red.line.callino.ui.theme.FrostedContainer
 import red.line.callino.ui.theme.FrostedGlassSolid
-import red.line.callino.ui.theme.FrostedGlassWhite
 import red.line.callino.ui.theme.FrostedPrimary
-import red.line.callino.ui.theme.FrostedSecondary
-import red.line.callino.ui.theme.FrostedTextMuted
-import red.line.callino.ui.theme.FrostedTextPrimary
 import red.line.callino.ui.theme.FrostedTextSecondary
-import red.line.callino.ui.theme.FrostedTint
 import red.line.callino.ui.theme.FrostedTintDeep
-import red.line.callino.ui.theme.FrostedTintLight
 
 enum class CallinoNavTab(
     val title: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
-    val tag: String
+    val tag: String,
+    val showInBottomNav: Boolean = true
 ) {
     HOME("خانه", Icons.Filled.Home, Icons.Outlined.Home, "tab_home"),
     THEMES("ظاهر تماس", Icons.Filled.Palette, Icons.Outlined.Palette, "tab_themes"),
     STORE("فروشگاه", Icons.Filled.Storefront, Icons.Outlined.Storefront, "tab_store"),
-    MY_CONTENT("محتوای من", Icons.Filled.VideoLibrary, Icons.Outlined.VideoLibrary, "tab_my_content"),
     CONTACTS("مخاطبین", Icons.Filled.Contacts, Icons.Outlined.Contacts, "tab_contacts"),
     SETTINGS("تنظیمات", Icons.Filled.Settings, Icons.Outlined.Settings, "tab_settings"),
-    GUIDE("راهنما", Icons.Filled.MenuBook, Icons.Outlined.MenuBook, "tab_guide"),
-    ABOUT("درباره ما", Icons.Filled.Info, Icons.Outlined.Info, "tab_about")
+    MY_CONTENT("محتوای من", Icons.Filled.VideoLibrary, Icons.Outlined.VideoLibrary, "tab_my_content", showInBottomNav = false),
+    GUIDE("راهنما", Icons.Filled.MenuBook, Icons.Outlined.MenuBook, "tab_guide", showInBottomNav = false),
+    ABOUT("درباره ما", Icons.Filled.Info, Icons.Outlined.Info, "tab_about", showInBottomNav = false)
 }
 
 @Composable
@@ -145,19 +130,13 @@ fun MainScreen(
                             customThemesCount = state.userMediaList.size,
                             contactsCount = state.contactThemes.size,
                             settings = state.settings,
-                            onToggleService = { enabled ->
-                                viewModel.setServiceEnabled(enabled)
-                            },
-                            onOpenCallSimulator = {
-                                viewModel.startCallSimulation()
-                            },
+                            onToggleService = { enabled -> viewModel.setServiceEnabled(enabled) },
+                            onOpenCallSimulator = { viewModel.startCallSimulation() },
                             onNavigateToThemes = { selectedTab = CallinoNavTab.THEMES.ordinal },
                             onNavigateToMyContent = { selectedTab = CallinoNavTab.MY_CONTENT.ordinal },
                             onNavigateToContacts = { selectedTab = CallinoNavTab.CONTACTS.ordinal },
                             onNavigateToGuide = { selectedTab = CallinoNavTab.GUIDE.ordinal },
-                            onSelectTheme = { theme ->
-                                viewModel.setActiveTheme(theme.id)
-                            }
+                            onSelectTheme = { theme -> viewModel.setActiveTheme(theme.id) }
                         )
                     }
 
@@ -167,18 +146,10 @@ fun MainScreen(
                             assetThemes = state.assetThemes,
                             activeThemeId = state.settings.activeGlobalThemeId,
                             vipStatus = state.vipStatus,
-                            onSelectTheme = { theme ->
-                                viewModel.setActiveTheme(theme.id)
-                            },
-                            onPreviewTheme = { theme ->
-                                viewModel.startThemePreview(theme = theme)
-                            },
-                            onOpenDetail = { theme ->
-                                selectedThemeForDetail = theme
-                            },
-                            onNavigateToVip = {
-                                showVipModal = true
-                            }
+                            onSelectTheme = { theme -> viewModel.setActiveTheme(theme.id) },
+                            onPreviewTheme = { theme -> viewModel.startThemePreview(theme = theme) },
+                            onOpenDetail = { theme -> selectedThemeForDetail = theme },
+                            onNavigateToVip = { showVipModal = true }
                         )
                     }
 
@@ -188,18 +159,10 @@ fun MainScreen(
                             allThemes = state.themes,
                             downloadProgressMap = state.downloadProgressMap,
                             vipStatus = state.vipStatus,
-                            onOpenPackageDetail = { pkg ->
-                                selectedPackageForDetail = pkg
-                            },
-                            onPreviewTheme = { theme ->
-                                viewModel.startThemePreview(theme = theme)
-                            },
-                            onDownloadPackage = { pkg ->
-                                viewModel.downloadThemePackage(pkg)
-                            },
-                            onNavigateToVip = {
-                                showVipModal = true
-                            }
+                            onOpenPackageDetail = { pkg -> selectedPackageForDetail = pkg },
+                            onPreviewTheme = { theme -> viewModel.startThemePreview(theme = theme) },
+                            onDownloadPackage = { pkg -> viewModel.downloadThemePackage(pkg) },
+                            onNavigateToVip = { showVipModal = true }
                         )
                     }
 
@@ -207,24 +170,14 @@ fun MainScreen(
                         MyContentScreen(
                             userMediaList = state.userMediaList,
                             vipStatus = state.vipStatus,
-                            onAddUserMedia = { title, uri, type ->
-                                viewModel.addUserMedia(title, uri, type)
-                            },
-                            onDeleteUserMedia = { id ->
-                                viewModel.deleteUserMedia(id)
-                            },
-                            onSetAsActiveCallTheme = { media ->
-                                viewModel.setMediaAsActiveTheme(media)
-                            },
+                            onAddUserMedia = { title, uri, type -> viewModel.addUserMedia(title, uri, type) },
+                            onDeleteUserMedia = { id -> viewModel.deleteUserMedia(id) },
+                            onSetAsActiveCallTheme = { media -> viewModel.setMediaAsActiveTheme(media) },
                             onPreviewUserMedia = { media ->
                                 val theme = state.themes.find { it.id == "theme_custom_${media.id}" }
-                                if (theme != null) {
-                                    viewModel.startThemePreview(theme = theme)
-                                }
+                                if (theme != null) viewModel.startThemePreview(theme = theme)
                             },
-                            onNavigateToVip = {
-                                showVipModal = true
-                            }
+                            onNavigateToVip = { showVipModal = true }
                         )
                     }
 
@@ -235,9 +188,7 @@ fun MainScreen(
                             onAssignContactTheme = { contactId, name, number, themeId, label ->
                                 viewModel.addContactTheme(contactId, name, number, themeId, label)
                             },
-                            onRemoveContactTheme = { contactId ->
-                                viewModel.removeContactTheme(contactId)
-                            },
+                            onRemoveContactTheme = { contactId -> viewModel.removeContactTheme(contactId) },
                             onSimulateContactCall = { name, number, theme ->
                                 viewModel.startCallSimulation(
                                     theme = theme,
@@ -252,21 +203,15 @@ fun MainScreen(
                     CallinoNavTab.SETTINGS.ordinal -> {
                         SettingsScreen(
                             settings = state.settings,
-                            onUpdateSettings = { newSettings ->
-                                viewModel.updateSettings(newSettings)
-                            },
-                            onResetSettings = {
-                                viewModel.resetSettings()
-                            },
+                            onUpdateSettings = { newSettings -> viewModel.updateSettings(newSettings) },
+                            onResetSettings = { viewModel.resetSettings() },
                             onNavigateToGuide = { selectedTab = CallinoNavTab.GUIDE.ordinal }
                         )
                     }
 
                     CallinoNavTab.GUIDE.ordinal -> {
                         GuideScreen(
-                            onOpenCallSimulator = {
-                                viewModel.startCallSimulation()
-                            }
+                            onOpenCallSimulator = { viewModel.startCallSimulation() }
                         )
                     }
 
@@ -280,7 +225,6 @@ fun MainScreen(
             }
         }
 
-        // Full Screen Live Call Simulator Modal Overlay
         AnimatedVisibility(
             visible = state.isSimulatingCall,
             enter = fadeIn(),
@@ -300,69 +244,34 @@ fun MainScreen(
             }
         }
 
-        // VIP Screen Modal Overlay
-        AnimatedVisibility(
-            visible = showVipModal,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(FrostedBg)
-            ) {
+        AnimatedVisibility(visible = showVipModal, enter = fadeIn(), exit = fadeOut()) {
+            Box(modifier = Modifier.fillMaxSize().background(FrostedBg)) {
                 VipScreen(
                     vipStatus = state.vipStatus,
-                    onPurchaseTier = { tier ->
-                        viewModel.purchaseVipTier(tier)
-                    },
-                    onApplyPromoCode = { code ->
-                        viewModel.applyPromoCode(code)
-                    },
-                    onRestorePurchases = {
-                        viewModel.restorePurchases()
-                    },
-                    onClose = {
-                        showVipModal = false
-                    }
+                    onPurchaseTier = { tier -> viewModel.purchaseVipTier(tier) },
+                    onApplyPromoCode = { code -> viewModel.applyPromoCode(code) },
+                    onRestorePurchases = { viewModel.restorePurchases() },
+                    onClose = { showVipModal = false }
                 )
             }
         }
 
-        // Theme Detail Screen Modal Overlay
-        AnimatedVisibility(
-            visible = selectedThemeForDetail != null,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
+        AnimatedVisibility(visible = selectedThemeForDetail != null, enter = fadeIn(), exit = fadeOut()) {
             val theme = selectedThemeForDetail
             if (theme != null) {
                 ThemeDetailScreen(
                     theme = theme,
                     isActive = theme.id == state.settings.activeGlobalThemeId,
                     vipStatus = state.vipStatus,
-                    onApplyTheme = { appliedTheme ->
-                        viewModel.setActiveTheme(appliedTheme.id)
-                    },
-                    onSimulateCall = { simTheme ->
-                        viewModel.startThemePreview(theme = simTheme)
-                    },
-                    onNavigateToVip = {
-                        showVipModal = true
-                    },
-                    onBack = {
-                        selectedThemeForDetail = null
-                    }
+                    onApplyTheme = { appliedTheme -> viewModel.setActiveTheme(appliedTheme.id) },
+                    onSimulateCall = { simTheme -> viewModel.startThemePreview(theme = simTheme) },
+                    onNavigateToVip = { showVipModal = true },
+                    onBack = { selectedThemeForDetail = null }
                 )
             }
         }
 
-        // Theme Package Detail Screen Modal Overlay
-        AnimatedVisibility(
-            visible = selectedPackageForDetail != null,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
+        AnimatedVisibility(visible = selectedPackageForDetail != null, enter = fadeIn(), exit = fadeOut()) {
             val pkg = selectedPackageForDetail
             if (pkg != null) {
                 val pkgThemes = state.themes.filter { it.id in pkg.themeIds }
@@ -375,21 +284,11 @@ fun MainScreen(
                     activeThemeId = state.settings.activeGlobalThemeId,
                     vipStatus = state.vipStatus,
                     downloadProgress = downloadProgress,
-                    onApplyTheme = { theme ->
-                        viewModel.setActiveTheme(theme.id)
-                    },
-                    onPreviewTheme = { theme ->
-                        viewModel.startThemePreview(theme = theme)
-                    },
-                    onDownloadPackage = { p ->
-                        viewModel.downloadThemePackage(p)
-                    },
-                    onNavigateToVip = {
-                        showVipModal = true
-                    },
-                    onBack = {
-                        selectedPackageForDetail = null
-                    }
+                    onApplyTheme = { theme -> viewModel.setActiveTheme(theme.id) },
+                    onPreviewTheme = { theme -> viewModel.startThemePreview(theme = theme) },
+                    onDownloadPackage = { p -> viewModel.downloadThemePackage(p) },
+                    onNavigateToVip = { showVipModal = true },
+                    onBack = { selectedPackageForDetail = null }
                 )
             }
         }
@@ -401,6 +300,14 @@ fun FrostedGlassBottomNavBar(
     selectedTabOrdinal: Int,
     onSelectTab: (Int) -> Unit
 ) {
+    val visibleTabs = CallinoNavTab.values().filter { it.showInBottomNav }
+
+    val effectiveSelected = if (visibleTabs.any { it.ordinal == selectedTabOrdinal }) {
+        selectedTabOrdinal
+    } else {
+        CallinoNavTab.HOME.ordinal
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -422,20 +329,21 @@ fun FrostedGlassBottomNavBar(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CallinoNavTab.values().forEach { tab ->
-                val isSelected = selectedTabOrdinal == tab.ordinal
+            visibleTabs.forEach { tab ->
+                val isSelected = effectiveSelected == tab.ordinal
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
+                        .weight(1f)
                         .clip(RoundedCornerShape(16.dp))
                         .clickable { onSelectTab(tab.ordinal) }
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(vertical = 4.dp)
                         .testTag(tab.tag)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(34.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) FrostedTintDeep else Color.Transparent),
                         contentAlignment = Alignment.Center
@@ -453,7 +361,7 @@ fun FrostedGlassBottomNavBar(
                     Text(
                         text = tab.title,
                         color = if (isSelected) FrostedPrimary else FrostedTextSecondary,
-                        fontSize = 9.5.sp,
+                        fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                     )
                 }

@@ -30,7 +30,6 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
-        // بعد از دریافت مجوزهای عادی، مجوز Overlay را بگیر
         requestOverlayPermission()
     }
 
@@ -38,7 +37,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // اگر همه مجوزها داده شده، دیگر درخواست نکن
         if (Settings.canDrawOverlays(this) && isServiceEnabled()) {
             // همه چیز آماده است
         } else {
@@ -51,8 +49,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    // ---------- مجوزهای عادی ----------
 
     private fun requestEssentialPermissions() {
         val permissions = mutableListOf(
@@ -75,12 +71,9 @@ class MainActivity : ComponentActivity() {
         if (missing.isNotEmpty()) {
             requestPermissionsLauncher.launch(missing.toTypedArray())
         } else {
-            // مجوزهای عادی داده شده، برو سراغ Overlay
             requestOverlayPermission()
         }
     }
-
-    // ---------- مجوز Overlay ----------
 
     private fun requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -97,21 +90,17 @@ class MainActivity : ComponentActivity() {
                 )
                 startActivityForResult(intent, OVERLAY_REQUEST_CODE)
             } else {
-                // Overlay داده شده، سرویس را خودکار فعال کن
                 enableServiceAutomatically()
                 requestFullScreenIntentPermission()
             }
         } else {
-            // اندروید قدیمی نیازی به این مجوز ندارد
             enableServiceAutomatically()
             requestFullScreenIntentPermission()
         }
     }
 
-    // ---------- مجوز FullScreenIntent (اندروید ۱۴+) ----------
-
     private fun requestFullScreenIntentPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.canUseFullScreenIntent()) {
                 Toast.makeText(
@@ -126,13 +115,11 @@ class MainActivity : ComponentActivity() {
                     }
                     startActivityForResult(intent, FULLSCREEN_INTENT_REQUEST_CODE)
                 } catch (e: Exception) {
-                    // اگر این تنظیمات در گوشی نبود، بی‌خیال شو
+                    // اگر این تنظیمات نبود
                 }
             }
         }
     }
-
-    // ---------- فعال‌سازی خودکار سرویس ----------
 
     private fun enableServiceAutomatically() {
         getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -146,8 +133,6 @@ class MainActivity : ComponentActivity() {
             .getBoolean(KEY_SERVICE_ENABLED, false)
     }
 
-    // ---------- نتیجه درخواست‌ها ----------
-
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -156,7 +141,6 @@ class MainActivity : ComponentActivity() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
                     Settings.canDrawOverlays(this)
                 ) {
-                    // ✅ مجوز گرفته شد - سرویس را خودکار فعال کن
                     enableServiceAutomatically()
                     Toast.makeText(
                         this,

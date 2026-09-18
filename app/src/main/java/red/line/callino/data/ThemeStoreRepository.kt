@@ -6,21 +6,14 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-/**
- * ThemeStoreRepository - Manages theme packages, downloads, and store catalog.
- * Reads package definitions from `assets/theme_packages.json` and tracks user downloads.
- * Ready for future REST/Cloud API connectivity.
- */
 class ThemeStoreRepository(private val context: Context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences("callino_store_prefs", Context.MODE_PRIVATE)
@@ -33,11 +26,11 @@ class ThemeStoreRepository(private val context: Context) {
         val STORE_CATEGORIES = listOf(
             "همه",
             "لوکس 💎",
-            "نئون 🌌",
             "طبیعت 🌿",
             "عاشقانه ❤️",
             "فضایی 🚀",
-            "مینیمال"
+            "نئون 🌌",
+            "سایر"
         )
 
         @Volatile
@@ -55,7 +48,6 @@ class ThemeStoreRepository(private val context: Context) {
     private val _packages = MutableStateFlow<List<ThemePackage>>(emptyList())
     val packages: StateFlow<List<ThemePackage>> = _packages.asStateFlow()
 
-    // Map of packageId -> download progress (0.0 to 1.0)
     private val _downloadProgressMap = MutableStateFlow<Map<String, Float>>(emptyMap())
     val downloadProgressMap: StateFlow<Map<String, Float>> = _downloadProgressMap.asStateFlow()
 
@@ -63,18 +55,21 @@ class ThemeStoreRepository(private val context: Context) {
         loadPackages()
     }
 
-    /**
-     * Loads package metadata from `theme_packages.json` and enriches with local download status.
-     */
     fun loadPackages() {
         try {
             val downloadedIds = getDownloadedPackageIds()
             val list = mutableListOf<ThemePackage>()
 
+            Log.d(TAG, "=== Starting to load $JSON_FILE ===")
+
             context.assets.open(JSON_FILE).use { inputStream ->
-                val reader = BufferedReader(InputStreamReader(inputStream))
+                val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
                 val jsonStr = reader.readText()
+
+                Log.d(TAG, "JSON file size: ${jsonStr.length} chars")
+
                 val jsonArray = JSONArray(jsonStr)
+                Log.d(TAG, "Found ${jsonArray.length()} packages in JSON")
 
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
@@ -98,13 +93,7 @@ class ThemeStoreRepository(private val context: Context) {
                         }
                     }
 
-                    val status = if (isDownloaded) {
-                        "DOWNLOADED"
-                    } else if (isVip) {
-                        "AVAILABLE"
-                    } else {
-                        "AVAILABLE"
-                    }
+                    val status = if (isDownloaded) "DOWNLOADED" else "AVAILABLE"
 
                     val pkg = ThemePackage(
                         id = id,
@@ -113,19 +102,38 @@ class ThemeStoreRepository(private val context: Context) {
                         coverImage = obj.optString("coverImage", ""),
                         themesCount = obj.optInt("themesCount", themeIdsList.size.coerceAtLeast(1)),
                         isVip = isVip,
-                        price = obj.optString("price", if (isVip) "ویژه VIP" else "رایگان"),
-                        category = obj.optString("category", "لوکس 💎"),
+                        price = obj.optString("price", ""),
+                        category = obj.optString("category", ""),
                         themeIds = themeIdsList,
                         tags = tagsList,
                         downloadStatus = status
                     )
                     list.add(pkg)
+                    Log.d(TAG, "Loaded package: $id")
                 }
             }
 
+            Log.d(TAG, "=== Loaded ${list.size} packages ===")
             _packages.value = list
+
+            // پیام دیباگ
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(
+                    context,
+                    "✅ ${list.size} پکیج لود شد",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading $JSON_FILE: ${e.message}", e)
+            Log.e(TAG, "FATAL: Error reading $JSON_FILE: ${e.message}", e)
+
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(
+                    context,
+                    "❌ خطا: ${e.message}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
@@ -137,10 +145,6 @@ class ThemeStoreRepository(private val context: Context) {
         return prefs.getStringSet(KEY_DOWNLOADED_PACKAGES, emptySet()) ?: emptySet()
     }
 
-    /**
-     * Simulates downloading and unpacking a theme package.
-     * Ready for future remote server asset sync.
-     */
     fun downloadPackage(
         packageId: String,
         scope: CoroutineScope,
@@ -154,7 +158,7 @@ class ThemeStoreRepository(private val context: Context) {
         scope.launch(Dispatchers.IO) {
             try {
                 for (step in 1..10) {
-                    delay(120) // Fast and smooth simulation
+                    delay(120)
                     val progress = (step * 10) / 100f
                     val updated = _downloadProgressMap.value.toMutableMap()
                     updated[packageId] = progress
@@ -162,7 +166,6 @@ class ThemeStoreRepository(private val context: Context) {
                     onProgress?.invoke(progress)
                 }
 
-                // Mark package as downloaded
                 val downloaded = getDownloadedPackageIds().toMutableSet()
                 downloaded.add(packageId)
                 prefs.edit().putStringSet(KEY_DOWNLOADED_PACKAGES, downloaded).apply()
@@ -171,7 +174,6 @@ class ThemeStoreRepository(private val context: Context) {
                 updatedProgress.remove(packageId)
                 _downloadProgressMap.value = updatedProgress
 
-                // Refresh package list state
                 loadPackages()
 
                 onComplete?.invoke(true)
