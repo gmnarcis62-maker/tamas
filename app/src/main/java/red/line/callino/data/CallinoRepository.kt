@@ -15,13 +15,12 @@ class CallinoRepository(private val context: Context) {
     private val database = AppDatabase.getDatabase(context)
     private val dao = database.callinoDao()
     private val prefs: SharedPreferences = context.getSharedPreferences("callino_prefs", Context.MODE_PRIVATE)
-    val assetThemeManager = AssetThemeManager.getInstance(context)
 
     val allThemes: Flow<List<CallTheme>> = dao.getAllThemesFlow()
     val allContactThemes: Flow<List<ContactTheme>> = dao.getAllContactThemesFlow()
     val allUserMedia: Flow<List<UserMedia>> = dao.getAllUserMediaFlow()
 
-    private val _assetThemes = MutableStateFlow<List<AssetTheme>>(assetThemeManager.loadAllAssetThemes())
+    private val _assetThemes = MutableStateFlow<List<AssetTheme>>(emptyList())
     val assetThemes: StateFlow<List<AssetTheme>> = _assetThemes.asStateFlow()
 
     private val _vipStatus = MutableStateFlow(loadVipStatus())
@@ -31,6 +30,9 @@ class CallinoRepository(private val context: Context) {
     val appSettings = _appSettings.asStateFlow()
 
     init {
+        // 🔑 مقداردهی اولیه AssetThemeManager
+        AssetThemeManager.initialize(context.applicationContext)
+
         CoroutineScope(Dispatchers.IO).launch {
             scanAndSyncAssets()
         }
@@ -42,9 +44,8 @@ class CallinoRepository(private val context: Context) {
         val expiryDate = prefs.getLong("vip_expiry_date", 0L)
         val vipType = prefs.getString("vip_type", "FREE") ?: "FREE"
 
-        // Check if expired
         val active = if (isVip) {
-            if (expiryDate <= 0L) true // Lifetime or promo indefinite
+            if (expiryDate <= 0L) true
             else System.currentTimeMillis() < expiryDate
         } else false
 
@@ -72,16 +73,18 @@ class CallinoRepository(private val context: Context) {
     }
 
     /**
-     * Scans assets folder and syncs available pre-packaged or dynamic assets
+     * اسکن assets و همگام‌سازی با دیتابیس
      */
     suspend fun scanAndSyncAssets() = withContext(Dispatchers.IO) {
         try {
-            val loadedAssets = assetThemeManager.loadAllAssetThemes()
+            // 🔑 استفاده از API جدید AssetThemeManager
+            AssetThemeManager.refresh(context.applicationContext)
+            val loadedAssets: List<AssetTheme> = AssetThemeManager.getAll()
             _assetThemes.value = loadedAssets
 
             val validAssetIds = loadedAssets.map { it.id }.toSet()
 
-            // Remove legacy sample/default themes that are not custom user themes and not in valid assets
+            // حذف تم‌های قدیمی که در assets نیستن
             val allDbThemes = dao.getAllThemes()
             for (dbTheme in allDbThemes) {
                 if (!dbTheme.id.startsWith("theme_custom_") && dbTheme.id !in validAssetIds) {
@@ -89,12 +92,12 @@ class CallinoRepository(private val context: Context) {
                 }
             }
 
-            // Insert or update valid asset themes
+            // اضافه کردن تم‌های assets به دیتابیس
             for (asset in loadedAssets) {
                 dao.insertTheme(asset.toCallTheme())
             }
         } catch (e: Exception) {
-            // Ignore asset scan errors if directory empty
+            android.util.Log.e("CallinoRepository", "Error scanning assets: ${e.message}", e)
         }
     }
 
@@ -209,11 +212,6 @@ class CallinoRepository(private val context: Context) {
 
     suspend fun deleteContactTheme(contactId: String) = dao.deleteContactTheme(contactId)
 
-    /**
-     * Imports a picked user media (Image/Video) from ContentResolver,
-     * copies it permanently to context.filesDir/callino_media/,
-     * and returns the persistent local file URI string.
-     */
     suspend fun importMediaFile(inputUriString: String, type: ThemeType): String? = withContext(Dispatchers.IO) {
         try {
             val uri = android.net.Uri.parse(inputUriString)
@@ -221,7 +219,6 @@ class CallinoRepository(private val context: Context) {
                 if (!exists()) mkdirs()
             }
 
-            // Determine file extension
             val mimeType = try { context.contentResolver.getType(uri) } catch (e: Exception) { null }
             val extension = when {
                 mimeType != null && mimeType.contains("png", ignoreCase = true) -> "png"
@@ -267,18 +264,14 @@ class CallinoRepository(private val context: Context) {
                 val uri = android.net.Uri.parse(media.uri)
                 if (uri.scheme == "file" && uri.path != null) {
                     val file = java.io.File(uri.path!!)
-                    if (file.exists()) {
-                        file.delete()
-                    }
+                    if (file.exists()) file.delete()
                 } else {
                     val directFile = java.io.File(media.uri)
-                    if (directFile.exists()) {
-                        directFile.delete()
-                    }
+                    if (directFile.exists()) directFile.delete()
                 }
             }
         } catch (e: Exception) {
-            // Ignore file deletion error
+            // Ignore
         }
         dao.deleteUserMedia(id)
         dao.deleteTheme("theme_custom_$id")
