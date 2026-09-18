@@ -1,0 +1,287 @@
+package red.line.callino.ui
+
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import red.line.callino.billing.LocalVipManager
+import red.line.callino.billing.VipTier
+import red.line.callino.data.AppSettings
+import red.line.callino.data.AssetTheme
+import red.line.callino.data.CallTheme
+import red.line.callino.data.CallinoRepository
+import red.line.callino.data.ContactTheme
+import red.line.callino.data.ThemePackage
+import red.line.callino.data.ThemeStoreRepository
+import red.line.callino.data.ThemeType
+import red.line.callino.data.UserMedia
+import red.line.callino.data.VipStatus
+
+data class CallinoUiState(
+    val themes: List<CallTheme> = emptyList(),
+    val assetThemes: List<AssetTheme> = emptyList(),
+    val contactThemes: List<ContactTheme> = emptyList(),
+    val userMediaList: List<UserMedia> = emptyList(),
+    val themePackages: List<ThemePackage> = emptyList(),
+    val downloadProgressMap: Map<String, Float> = emptyMap(),
+    val settings: AppSettings = AppSettings(),
+    val vipStatus: VipStatus = VipStatus(),
+    val activeGlobalTheme: CallTheme? = null,
+    val previewingTheme: CallTheme? = null,
+    val isSimulatingCall: Boolean = false,
+    val isPreviewMode: Boolean = false,
+    val simulatorCallerName: String = "تماسینو",
+    val simulatorCallerNumber: String = "",
+    val simulatorRelationship: String? = "پیش‌نمایش تم"
+)
+
+class CallinoViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = CallinoRepository.getInstance(application)
+    private val vipManager = LocalVipManager.getInstance(application)
+    private val themeStoreRepo = ThemeStoreRepository.getInstance(application)
+
+    private val _simulatingState = MutableStateFlow(
+        SimulatingState(isSimulating = false)
+    )
+
+    data class SimulatingState(
+        val isSimulating: Boolean = false,
+        val isPreviewMode: Boolean = false,
+        val customTheme: CallTheme? = null,
+        val callerName: String = "تماسینو",
+        val callerNumber: String = "",
+        val relationship: String? = "پیش‌نمایش تم"
+    )
+
+    val uiState: StateFlow<CallinoUiState> = combine(
+        combine(
+            repository.allThemes,
+            repository.assetThemes,
+            repository.allContactThemes,
+            themeStoreRepo.packages,
+            themeStoreRepo.downloadProgressMap
+        ) { themes: List<CallTheme>, assetThemes: List<AssetTheme>, contacts: List<ContactTheme>, pkgs: List<ThemePackage>, progress: Map<String, Float> ->
+            StoreCombinedData(themes, assetThemes, contacts, pkgs, progress)
+        },
+        repository.allUserMedia,
+        repository.appSettings,
+        repository.vipStatus,
+        _simulatingState
+    ) { (themes, assetThemes, contactThemes, pkgs, progress), userMedia, settings, vipStatus, simState ->
+        val activeTheme = themes.find { it.id == settings.activeGlobalThemeId }
+            ?: themes.firstOrNull()
+            ?: red.line.callino.data.DefaultCallTheme
+
+        CallinoUiState(
+            themes = themes,
+            assetThemes = assetThemes,
+            contactThemes = contactThemes,
+            userMediaList = userMedia,
+            themePackages = pkgs,
+            downloadProgressMap = progress,
+            settings = settings,
+            vipStatus = vipStatus,
+            activeGlobalTheme = activeTheme,
+            previewingTheme = simState.customTheme ?: activeTheme,
+            isSimulatingCall = simState.isSimulating,
+            isPreviewMode = simState.isPreviewMode,
+            simulatorCallerName = simState.callerName,
+            simulatorCallerNumber = simState.callerNumber,
+            simulatorRelationship = simState.relationship
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CallinoUiState()
+    )
+
+    private data class StoreCombinedData(
+        val themes: List<CallTheme>,
+        val assetThemes: List<AssetTheme>,
+        val contactThemes: List<ContactTheme>,
+        val packages: List<ThemePackage>,
+        val downloadProgress: Map<String, Float>
+    )
+
+    fun purchaseVipTier(tier: VipTier, onComplete: ((Boolean, String) -> Unit)? = null) {
+        viewModelScope.launch {
+            val result = vipManager.purchaseVip(tier)
+            if (result.isSuccess) {
+                onComplete?.invoke(true, "اشتراک ${tier.titleFa} با موفقیت فعال گردید.")
+            } else {
+                onComplete?.invoke(false, result.exceptionOrNull()?.message ?: "خطا در فرآیند فعال‌سازی")
+            }
+        }
+    }
+
+    fun applyPromoCode(code: String, onComplete: ((Boolean, String) -> Unit)? = null) {
+        viewModelScope.launch {
+            val result = vipManager.activatePromoCode(code)
+            if (result.isSuccess) {
+                onComplete?.invoke(true, "کد هدیه با موفقیت تایید و اشتراک ویژه فعال گردید.")
+            } else {
+                onComplete?.invoke(false, result.exceptionOrNull()?.message ?: "کد وارد شده معتبر نیست.")
+            }
+        }
+    }
+
+    fun restorePurchases(onComplete: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            val result = vipManager.restorePurchases()
+            onComplete?.invoke(result.getOrDefault(false))
+        }
+    }
+
+    fun setActiveTheme(themeId: String) {
+        viewModelScope.launch {
+            repository.setActiveTheme(themeId)
+        }
+    }
+
+    fun updateSettings(settings: AppSettings) {
+        viewModelScope.launch {
+            repository.updateSettings(settings)
+        }
+    }
+
+    fun resetSettings() {
+        viewModelScope.launch {
+            repository.resetSettings()
+        }
+    }
+
+    fun addContactTheme(
+        contactId: String,
+        name: String,
+        number: String,
+        themeId: String,
+        label: String?
+    ) {
+        viewModelScope.launch {
+            repository.addContactTheme(
+                ContactTheme(
+                    contactId = contactId,
+                    contactName = name,
+                    contactNumber = number,
+                    themeId = themeId,
+                    relationshipLabel = label
+                )
+            )
+        }
+    }
+
+    fun removeContactTheme(contactId: String) {
+        viewModelScope.launch {
+            repository.deleteContactTheme(contactId)
+        }
+    }
+
+    fun addUserMedia(title: String, uri: String, type: ThemeType, onResult: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch {
+            val persistentUri = repository.importMediaFile(uri, type)
+            if (persistentUri != null) {
+                val mediaId = "user_media_${System.currentTimeMillis()}"
+                val media = UserMedia(
+                    id = mediaId,
+                    title = title,
+                    uri = persistentUri,
+                    mediaType = type
+                )
+                repository.addUserMedia(media)
+
+                // Also create a CallTheme for it
+                val theme = CallTheme(
+                    id = "theme_custom_$mediaId",
+                    titleFa = title,
+                    titleEn = title,
+                    type = type,
+                    previewResName = "custom",
+                    mediaUri = persistentUri,
+                    category = "شخصی"
+                )
+                repository.addCustomTheme(theme)
+                onResult?.invoke(true)
+            } else {
+                onResult?.invoke(false)
+            }
+        }
+    }
+
+    fun deleteUserMedia(id: String) {
+        viewModelScope.launch {
+            repository.deleteUserMedia(id)
+        }
+    }
+
+    fun setMediaAsActiveTheme(media: UserMedia) {
+        viewModelScope.launch {
+            val themeId = "theme_custom_${media.id}"
+            // Ensure theme exists
+            val customTheme = CallTheme(
+                id = themeId,
+                titleFa = media.title,
+                titleEn = media.title,
+                type = media.mediaType,
+                previewResName = "custom",
+                mediaUri = media.uri,
+                category = "شخصی"
+            )
+            repository.addCustomTheme(customTheme)
+            repository.setActiveTheme(themeId)
+        }
+    }
+
+    fun setServiceEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val current = uiState.value.settings
+            repository.updateSettings(current.copy(isServiceEnabled = enabled))
+        }
+    }
+
+    fun startThemePreview(theme: CallTheme) {
+        _simulatingState.value = SimulatingState(
+            isSimulating = true,
+            isPreviewMode = true,
+            customTheme = theme,
+            callerName = "تماسینو",
+            callerNumber = "",
+            relationship = "پیش‌نمایش تم"
+        )
+    }
+
+    fun startCallSimulation(
+        theme: CallTheme? = null,
+        callerName: String = "مهندس مهدی رضایی",
+        callerNumber: String = "۰۹۱۲۳۴۵۶۷۸۹",
+        relationship: String? = "ردلاین سافت البرز",
+        isPreviewMode: Boolean = false
+    ) {
+        _simulatingState.value = SimulatingState(
+            isSimulating = true,
+            isPreviewMode = isPreviewMode,
+            customTheme = theme,
+            callerName = callerName,
+            callerNumber = callerNumber,
+            relationship = relationship
+        )
+    }
+
+    fun downloadThemePackage(themePackage: ThemePackage, onComplete: ((Boolean) -> Unit)? = null) {
+        themeStoreRepo.downloadPackage(
+            packageId = themePackage.id,
+            scope = viewModelScope,
+            onComplete = onComplete
+        )
+    }
+
+    fun stopCallSimulation() {
+        _simulatingState.value = SimulatingState(isSimulating = false)
+    }
+}

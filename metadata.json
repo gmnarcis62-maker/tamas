@@ -1,0 +1,6 @@
+{
+  "name": "تماسینو",
+  "description": "برنامه هوشمند شخصی‌سازی و زیباسازی صفحه تماس‌های ورودی با تصاویر، ویدیوها، انیمیشن‌ها و تم‌های اختصاصی برای مخاطبین",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
