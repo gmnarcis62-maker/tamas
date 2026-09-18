@@ -1,6 +1,5 @@
 package red.line.callino.ui.theme
 
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 // ============================================================
@@ -33,53 +32,43 @@ val FrostedTextMuted: Color = LightPalette.textTertiary
 // --- حاشیه ---
 val FrostedBorder: Color = LightPalette.outline
 
-// --- تینت‌ها (سایه‌های ملایم) ---
+// --- تینت‌ها ---
 val FrostedTint: Color = LightPalette.primaryContainer
 val FrostedTintLight: Color = LightPalette.primaryContainer.copy(alpha = 0.5f)
 val FrostedTintDeep: Color = LightPalette.primaryContainer
 
 // ============================================================
-// 🎨 گرادیانت‌های تم (Theme Gradients)
-// این‌ها برای پیش‌نمایش تم‌ها در Components.kt و GradientThemeRenderer.kt
-// استفاده می‌شن. رنگ‌ها رو از پالت جدید انتخاب کردم.
+// 🎨 گرادیانت‌های تم (List<Color> — نه Brush)
+// این‌ها در Components.kt و GradientThemeRenderer.kt به صورت
+// لیست رنگ استفاده می‌شن (با [0]، [1] و getOrNull).
 // ============================================================
 
-val AuroraGradient = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFF06B6D4),   // Cyan
-        Color(0xFF10B981),   // Emerald
-        Color(0xFF8B5CF6)    // Violet
-    )
+val AuroraGradient: List<Color> = listOf(
+    Color(0xFF06B6D4),   // Cyan
+    Color(0xFF10B981),   // Emerald
+    Color(0xFF8B5CF6)    // Violet
 )
 
-val CyberNeonGradient = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFF06B6D4),   // Cyan
-        Color(0xFF6366F1),   // Indigo
-        Color(0xFFEC4899)    // Pink
-    )
+val CyberNeonGradient: List<Color> = listOf(
+    Color(0xFF06B6D4),   // Cyan
+    Color(0xFF6366F1),   // Indigo
+    Color(0xFFEC4899)    // Pink
 )
 
-val DeepCosmosGradient = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFF1E1B4B),   // Deep Indigo
-        Color(0xFF312E81),   // Indigo
-        Color(0xFF6D28D9)    // Violet
-    )
+val DeepCosmosGradient: List<Color> = listOf(
+    Color(0xFF1E1B4B),   // Deep Indigo
+    Color(0xFF312E81),   // Indigo
+    Color(0xFF6D28D9)    // Violet
 )
 
-val PersianGoldGradient = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFFF59E0B),   // Gold
-        Color(0xFFD97706),   // Amber
-        Color(0xFFB45309)    // Dark Amber
-    )
+val PersianGoldGradient: List<Color> = listOf(
+    Color(0xFFF59E0B),   // Gold
+    Color(0xFFD97706),   // Amber
+    Color(0xFFB45309)    // Dark Amber
 )
 
-val RomanticGradient = Brush.linearGradient(
-    colors = listOf(
-        Color(0xFFEC4899),   // Pink
-        Color(0xFFDB2777),   // Rose
-        Color(0xFFBE185D)    // Deep Rose
-    )
+val RomanticGradient: List<Color> = listOf(
+    Color(0xFFEC4899),   // Pink
+    Color(0xFFDB2777),   // Rose
+    Color(0xFFBE185D)    // Deep Rose
 )
