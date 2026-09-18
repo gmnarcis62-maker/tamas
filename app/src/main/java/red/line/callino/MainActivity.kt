@@ -1,9 +1,15 @@
 package red.line.callino
 
 import android.Manifest
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,17 +20,30 @@ import red.line.callino.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private const val OVERLAY_REQUEST_CODE = 1234
+        private const val FULLSCREEN_INTENT_REQUEST_CODE = 1235
+        private const val PREFS_NAME = "callino_prefs"
+        private const val KEY_SERVICE_ENABLED = "isServiceEnabled"
+    }
+
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
-        // Permissions handled
+        // بعد از دریافت مجوزهای عادی، مجوز Overlay را بگیر
+        requestOverlayPermission()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        requestEssentialPermissions()
+        // اگر همه مجوزها داده شده، دیگر درخواست نکن
+        if (Settings.canDrawOverlays(this) && isServiceEnabled()) {
+            // همه چیز آماده است
+        } else {
+            requestEssentialPermissions()
+        }
 
         setContent {
             MyApplicationTheme {
@@ -32,6 +51,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // ---------- مجوزهای عادی ----------
 
     private fun requestEssentialPermissions() {
         val permissions = mutableListOf(
@@ -53,6 +74,112 @@ class MainActivity : ComponentActivity() {
 
         if (missing.isNotEmpty()) {
             requestPermissionsLauncher.launch(missing.toTypedArray())
+        } else {
+            // مجوزهای عادی داده شده، برو سراغ Overlay
+            requestOverlayPermission()
+        }
+    }
+
+    // ---------- مجوز Overlay ----------
+
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Toast.makeText(
+                    this,
+                    "برای نمایش روی صفحه تماس، مجوز «نمایش روی برنامه‌های دیگر» را فعال کنید",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivityForResult(intent, OVERLAY_REQUEST_CODE)
+            } else {
+                // Overlay داده شده، سرویس را خودکار فعال کن
+                enableServiceAutomatically()
+                requestFullScreenIntentPermission()
+            }
+        } else {
+            // اندروید قدیمی نیازی به این مجوز ندارد
+            enableServiceAutomatically()
+            requestFullScreenIntentPermission()
+        }
+    }
+
+    // ---------- مجوز FullScreenIntent (اندروید ۱۴+) ----------
+
+    private fun requestFullScreenIntentPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // Android 14
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            if (!notificationManager.canUseFullScreenIntent()) {
+                Toast.makeText(
+                    this,
+                    "برای نمایش روی صفحه قفل، مجوز «Full screen notifications» را فعال کنید",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivityForResult(intent, FULLSCREEN_INTENT_REQUEST_CODE)
+                } catch (e: Exception) {
+                    // اگر این تنظیمات در گوشی نبود، بی‌خیال شو
+                }
+            }
+        }
+    }
+
+    // ---------- فعال‌سازی خودکار سرویس ----------
+
+    private fun enableServiceAutomatically() {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_SERVICE_ENABLED, true)
+            .apply()
+    }
+
+    private fun isServiceEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_SERVICE_ENABLED, false)
+    }
+
+    // ---------- نتیجه درخواست‌ها ----------
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            OVERLAY_REQUEST_CODE -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                    Settings.canDrawOverlays(this)
+                ) {
+                    // ✅ مجوز گرفته شد - سرویس را خودکار فعال کن
+                    enableServiceAutomatically()
+                    Toast.makeText(
+                        this,
+                        "✅ آماده است! روی صفحه تماس نمایش داده می‌شود",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    requestFullScreenIntentPermission()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "❌ بدون این مجوز برنامه روی صفحه تماس نمایش داده نمی‌شود",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+
+            FULLSCREEN_INTENT_REQUEST_CODE -> {
+                Toast.makeText(
+                    this,
+                    "تنظیمات ذخیره شد. حالا یک تماس آزمایشی بگیرید.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }
