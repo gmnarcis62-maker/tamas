@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,25 +32,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import red.line.callino.ui.theme.Radius
 import red.line.callino.ui.theme.Spacing
 
 // ============================================================
 // 🎨 CALINO DESIGN SYSTEM — Shared Components
-// این کامپوننت‌ها در همه صفحه‌ها استفاده می‌شن تا UI یکدست بشه.
-// همه از MaterialTheme.colorScheme استفاده می‌کنن → Dark/Light خودکار
 // ============================================================
 
-/**
- * کارت اصلی برنامه — با سایه نرم و گوشه‌های گرد
- */
 @Composable
 fun CallinoCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(Spacing.lg),
-    content: @Composable Column.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(Radius.md)
     val clickModifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
@@ -76,16 +71,13 @@ fun CallinoCard(
     }
 }
 
-/**
- * کارت شیشه‌ای با حاشیه نرم — مناسب برای هیرو و کارت‌های مهم
- */
 @Composable
 fun CallinoGlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     gradient: List<Color>? = null,
     contentPadding: PaddingValues = PaddingValues(Spacing.lg),
-    content: @Composable Column.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(Radius.lg)
     val clickModifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
@@ -121,9 +113,6 @@ fun CallinoGlassCard(
     }
 }
 
-/**
- * تیتر بخش — با اکشن اختیاری در سمت چپ
- */
 @Composable
 fun CallinoSectionTitle(
     title: String,
@@ -159,9 +148,6 @@ fun CallinoSectionTitle(
     }
 }
 
-/**
- * آیکون در یک باکس رنگی — برای کارت‌های Quick Access و لیست‌ها
- */
 @Composable
 fun CallinoIconBadge(
     icon: ImageVector,
@@ -186,9 +172,6 @@ fun CallinoIconBadge(
     }
 }
 
-/**
- * دکمه اصلی — با گرادیانت بنفش-آبی
- */
 @Composable
 fun CallinoPrimaryButton(
     text: String,
@@ -255,9 +238,6 @@ fun CallinoPrimaryButton(
     }
 }
 
-/**
- * دکمه ثانویه — با حاشیه، بدون پس‌زمینه رنگی
- */
 @Composable
 fun CallinoOutlineButton(
     text: String,
@@ -302,9 +282,6 @@ fun CallinoOutlineButton(
     }
 }
 
-/**
- * چیپ فیلتر — برای دسته‌بندی‌ها و برچسب‌ها
- */
 @Composable
 fun CallinoChip(
     text: String,
@@ -337,21 +314,12 @@ fun CallinoChip(
     }
 }
 
-/**
- * اسپیس‌کننده افقی
- */
 @Composable
 fun HSpacer(size: Int) = Spacer(Modifier.width(size.dp))
 
-/**
- * اسپیس‌کننده عمودی
- */
 @Composable
 fun VSpacer(size: Int) = Spacer(Modifier.height(size.dp))
 
-/**
- * Empty State استاندارد — وقتی لیستی خالیه
- */
 @Composable
 fun CallinoEmptyState(
     icon: ImageVector,
