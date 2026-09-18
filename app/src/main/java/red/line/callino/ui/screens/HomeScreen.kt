@@ -39,13 +39,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,10 +57,9 @@ import red.line.callino.data.AppSettings
 import red.line.callino.data.CallTheme
 import red.line.callino.ui.components.CallThemeBackground
 import red.line.callino.ui.components.CallinoCard
-import red.line.callino.ui.components.CallinoChip
-import red.line.callino.ui.components.CallinoEmptyState
 import red.line.callino.ui.components.CallinoGlassCard
 import red.line.callino.ui.components.CallinoIconBadge
+import red.line.callino.ui.components.CallinoOutlineButton
 import red.line.callino.ui.components.CallinoPrimaryButton
 import red.line.callino.ui.components.CallinoSectionTitle
 import red.line.callino.ui.components.VSpacer
@@ -155,7 +156,6 @@ fun HomeScreen(
                     if (neededPerms.isNotEmpty()) {
                         permissionLauncher.launch(neededPerms.toTypedArray())
                     }
-                    // درخواست Overlay جداگانه
                     if (!hasOverlay && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                         try {
                             val intent = android.content.Intent(
@@ -176,7 +176,7 @@ fun HomeScreen(
         }
 
         // ===================================================
-        // 2. Hero Card (Branding + Preview Button)
+        // 2. Hero Card
         // ===================================================
         item {
             HeroBrandCard(
@@ -280,20 +280,6 @@ fun HomeScreen(
                 }
             }
         }
-
-        // ===================================================
-        // 6. Empty state (اگر هیچ تمی نبود)
-        // ===================================================
-        if (popularThemes.isEmpty()) {
-            item {
-                CallinoEmptyState(
-                    icon = Icons.Default.Palette,
-                    title = "هنوز تمی اضافه نشده",
-                    description = "از گالری تم، اولین پوست خود را انتخاب کنید",
-                    modifier = Modifier.padding(horizontal = Spacing.screenHorizontal)
-                )
-            }
-        }
     }
 
     // ===================================================
@@ -392,7 +378,6 @@ private fun ServiceStatusCard(
                     }
                 }
 
-                // Health button
                 Surface(
                     modifier = Modifier
                         .clip(RoundedCornerShape(Radius.xs))
@@ -688,7 +673,7 @@ private fun ActiveThemeCard(
 private fun QuickAccessCard(
     title: String,
     subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
