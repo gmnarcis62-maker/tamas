@@ -1,37 +1,46 @@
 package red.line.callino.data
 
-import kotlin.math.abs
-
 /**
- * انواع افکت‌های نمایش برای تم‌های تصویری/ویدیویی/انیمیشن
- * هر فایل موجود در assets یک افکت رندوم (بر اساس هش نامش) می‌گیرد
+ * تمام افکت‌های پریمیوم تماسینو.
+ * افکت کهکشان و افکت‌های قدیمی حذف شده‌اند.
  */
-enum class EffectType(val id: Int, val titleFa: String) {
-    NONE(0, "بدون افکت"),
-    FADE_LOOP(1, "محو شدن دوره‌ای"),
-    SCALE_BREATHE(2, "نفس کشیدن آرام"),
-    PULSE_GLOW(3, "درخشش پالسی"),
-    ROTATE_SLOW(4, "چرخش آرام"),
-    COLOR_SHIFT(5, "تغییر رنگ"),
-    BLUR_PULSE(6, "تاری پالسی"),
-    GRADIENT_SHIFT(7, "جابجایی گرادیانت"),
-    PARTICLES(8, "ذرات شناور"),
-    SHAKE_SOFT(9, "لرزش ملایم"),
-    ZOOM_IN_OUT(10, "زوم داخل و خارج"),
-    FLIP_HORIZONTAL(11, "چرخش افقی"),
-    WAVE(12, "موج"),
-    NEON_BORDER(13, "حاشیه نئون"),
-    FILM_GRAIN(14, "گرین فیلم");
+enum class EffectType(val label: String) {
+    NONE("بدون افکت"),
+
+    MESH_GRADIENT("مِش گرادیانت"),
+    INK_FLOW("جوهر روان"),
+    NEBULA("سحابی"),
+    PREMIUM_AURORA("شفق پریمیوم"),
+
+    LIQUID_GLASS("شیشه مایع"),
+    GLASS_REFRACTION("شکست نور"),
+    GLASS_MORPH("شیشه مرف"),
+
+    VOLUMETRIC_BEAMS("نور حجمی"),
+    BLOOM("شکوفایی نور"),
+    PHOTON_BEAMS("شعاع‌های نوری"),
+    PRISM_LIGHT("منشور نور"),
+    NEON_PULSE("نبض نئون"),
+    ENERGY_AURA("هاله انرژی"),
+
+    HOLOGRAPHIC_FOIL("هولوگرافیک"),
+    CHROME_METAL("کروم فلزی"),
+    LIQUID_METAL("فلز مایع"),
+    CRYSTAL_PRISM("کریستال"),
+
+    CONSTELLATION("صورت فلکی"),
+    COSMIC_DUST("غبار کیهانی"),
+    CAUSTICS("نور زیر آب"),
+    CHROMATIC_ABERRATION("خطای رنگی"),
+
+    GLITCH_NEON("گلیچ نئون"),
+    SONIC_WAVE("موج صوتی"),
+    DEPTH_PARALLAX("عمق پارالاکس");
 
     companion object {
-        /**
-         * یک افکت رندوم (اما تکرارپذیر) از روی نام فایل تولید می‌کند
-         */
-        fun fromFileName(fileName: String): EffectType {
-            val hash = abs(fileName.hashCode())
-            // NONE رو حذف می‌کنیم تا همیشه یه افکت داشته باشه
-            val types = values().filter { it != NONE }
-            return types[hash % types.size]
-        }
+        val DEFAULT = MESH_GRADIENT
+
+        fun fromName(name: String?): EffectType =
+            entries.firstOrNull { it.name == name } ?: NONE
     }
 }

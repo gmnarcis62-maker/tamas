@@ -2,7 +2,6 @@ package red.line.callino.data
 
 import android.content.Context
 import android.util.Log
-import java.net.URLEncoder
 
 object AssetScanner {
 
@@ -37,7 +36,7 @@ object AssetScanner {
                     val assetPath = "$folder/$fileName"
                     val id = "asset_${folder}_${stableId(fileName)}"
 
-                    val effect = EffectType.fromFileName(fileName)
+                    val effect = EffectRandomizer.forFileName(fileName)
                     val category = detectCategory(folder, fileName)
 
                     result.add(

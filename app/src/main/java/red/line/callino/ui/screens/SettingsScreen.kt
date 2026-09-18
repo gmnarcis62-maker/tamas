@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneInTalk
@@ -58,7 +60,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import red.line.callino.data.AppSettings
+import red.line.callino.data.EffectSelectionMode
+import red.line.callino.data.EffectType
+import red.line.callino.data.EffectsCatalog
 import red.line.callino.ui.components.CallButtonsContainer
+import red.line.callino.ui.components.EffectPickerDialog
 import red.line.callino.ui.theme.Radius
 import red.line.callino.ui.theme.Spacing
 
@@ -68,9 +74,11 @@ fun SettingsScreen(
     onUpdateSettings: (AppSettings) -> Unit,
     onResetSettings: () -> Unit,
     onNavigateToGuide: () -> Unit,
+    onOpenEffectsGallery: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showResetDialog by remember { mutableStateOf(false) }
+    var showGlobalEffectPicker by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier
@@ -79,9 +87,6 @@ fun SettingsScreen(
         contentPadding = PaddingValues(top = Spacing.lg, bottom = Spacing.screenBottom),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
-        // ==========================================
-        // Header
-        // ==========================================
         item {
             Column {
                 Text(
@@ -99,9 +104,6 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // Service Master Switch
-        // ==========================================
         item {
             SettingsSectionCard(title = "سرویس تماسینو", icon = Icons.Default.PhoneInTalk) {
                 SettingSwitchRow(
@@ -117,9 +119,141 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // Caller Info Display
-        // ==========================================
+        // ---- افکت‌های پریمیوم ----
+        item {
+            SettingsSectionCard(title = "افکت‌های پریمیوم", icon = Icons.Default.AutoAwesome) {
+                Text(
+                    text = "حالت انتخاب افکت روی تم‌ها:",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(Spacing.sm))
+
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    EffectModeOption(
+                        mode = EffectSelectionMode.RANDOM,
+                        isSelected = settings.effectSelectionMode == EffectSelectionMode.RANDOM,
+                        onClick = { onUpdateSettings(settings.copy(effectSelectionMode = EffectSelectionMode.RANDOM)) }
+                    )
+                    EffectModeOption(
+                        mode = EffectSelectionMode.MANUAL,
+                        isSelected = settings.effectSelectionMode == EffectSelectionMode.MANUAL,
+                        onClick = { onUpdateSettings(settings.copy(effectSelectionMode = EffectSelectionMode.MANUAL)) }
+                    )
+                    EffectModeOption(
+                        mode = EffectSelectionMode.GLOBAL,
+                        isSelected = settings.effectSelectionMode == EffectSelectionMode.GLOBAL,
+                        onClick = { onUpdateSettings(settings.copy(effectSelectionMode = EffectSelectionMode.GLOBAL)) }
+                    )
+                    EffectModeOption(
+                        mode = EffectSelectionMode.OFF,
+                        isSelected = settings.effectSelectionMode == EffectSelectionMode.OFF,
+                        onClick = { onUpdateSettings(settings.copy(effectSelectionMode = EffectSelectionMode.OFF)) }
+                    )
+                }
+
+                if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL ||
+                    settings.effectSelectionMode == EffectSelectionMode.MANUAL) {
+                    Spacer(Modifier.height(Spacing.lg))
+
+                    val currentEffect = if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL) {
+                        settings.globalEffect
+                    } else {
+                        EffectType.MESH_GRADIENT
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(Radius.md),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL) {
+                                    showGlobalEffectPicker = true
+                                } else {
+                                    onOpenEffectsGallery()
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(Spacing.md),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL)
+                                        "افکت فعلی سراسری:"
+                                    else
+                                        "انتخاب افکت برای هر تم:",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL)
+                                        currentEffect.label
+                                    else
+                                        "ورود به گالری",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = if (settings.effectSelectionMode == EffectSelectionMode.GLOBAL)
+                                            Icons.Default.Palette
+                                        else Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(Spacing.md))
+
+                Button(
+                    onClick = onOpenEffectsGallery,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .testTag("open_effects_gallery_btn"),
+                    shape = RoundedCornerShape(Radius.sm),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Casino,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "مشاهده گالری ${EffectsCatalog.all.size} افکت",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+
+        // ---- اطلاعات نمایش تماس ----
         item {
             SettingsSectionCard(title = "اطلاعات نمایش تماس", icon = Icons.Default.Visibility) {
                 SettingSwitchRow(
@@ -129,9 +263,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(callerNameVisible = it)) },
                     tag = "toggle_caller_name"
                 )
-
                 Spacer(Modifier.height(Spacing.md))
-
                 SettingSwitchRow(
                     title = "نمایش شماره تماس",
                     subtitle = "شماره تماس روی صفحه تماس نمایش داده شود",
@@ -139,9 +271,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(callerNumberVisible = it)) },
                     tag = "toggle_caller_number"
                 )
-
                 Spacer(Modifier.height(Spacing.lg))
-
                 Text(
                     text = "موقعیت اطلاعات تماس:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -154,8 +284,8 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     listOf(
-                        "TOP" to "بالا (استاندارد)",
-                        "CENTER" to "مرکز صفحه",
+                        "TOP" to "بالا",
+                        "CENTER" to "مرکز",
                         "BOTTOM" to "پایین"
                     ).forEach { (posKey, posLabel) ->
                         val isSel = settings.callerInfoPosition == posKey
@@ -184,11 +314,9 @@ fun SettingsScreen(
                         }
                     }
                 }
-
                 Spacer(Modifier.height(Spacing.lg))
-
                 Text(
-                    text = "اندازه قلم نام و نوشته‌ها: ${(settings.fontSizeScale * 100).toInt()}%",
+                    text = "اندازه قلم: ${(settings.fontSizeScale * 100).toInt()}%",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp
                 )
@@ -207,12 +335,9 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // Button Design (with bigger preview)
-        // ==========================================
+        // ---- طراحی دکمه‌ها ----
         item {
             SettingsSectionCard(title = "طراحی دکمه‌های تماس", icon = Icons.Default.Palette) {
-                // Live Preview
                 Text(
                     text = "پیش‌نمایش زنده دکمه‌ها:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -244,7 +369,6 @@ fun SettingsScreen(
                         onAnswerClick = {},
                         onRejectClick = {}
                     )
-
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -264,7 +388,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
-                // Button Style (6 options)
                 Text(
                     text = "استایل دکمه‌ها:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -313,7 +436,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
-                // Button Layout (4 options)
                 Text(
                     text = "چیدمان دکمه‌ها:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -360,7 +482,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
-                // Button Size (3 options)
                 Text(
                     text = "اندازه دکمه‌ها:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -389,7 +510,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
-                // Emojis
                 Text(
                     text = "آیکون دکمه پاسخ:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -464,7 +584,6 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
-                // Custom Texts
                 Text(
                     text = "متن دکمه پاسخ:",
                     color = MaterialTheme.colorScheme.onSurface,
@@ -507,11 +626,9 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // Visual Effects
-        // ==========================================
+        // ---- افکت‌های بصری عمومی ----
         item {
-            SettingsSectionCard(title = "افکت‌های بصری", icon = Icons.Default.Opacity) {
+            SettingsSectionCard(title = "افکت‌های بصری عمومی", icon = Icons.Default.Opacity) {
                 SettingSwitchRow(
                     title = "انیمیشن‌ها",
                     subtitle = "افکت‌های پویا و متحرک روی صفحه تماس",
@@ -519,9 +636,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(animationsEnabled = it)) },
                     tag = "toggle_animations"
                 )
-
                 Spacer(Modifier.height(Spacing.md))
-
                 SettingSwitchRow(
                     title = "ذرات نورانی شناور",
                     subtitle = "ذرات کوچک نورانی روی پس‌زمینه تماس",
@@ -529,9 +644,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(enableParticles = it)) },
                     tag = "toggle_particles"
                 )
-
                 Spacer(Modifier.height(Spacing.md))
-
                 SettingSwitchRow(
                     title = "افکت درخشش (Glow)",
                     subtitle = "درخشش نرم دور کارت اطلاعات تماس",
@@ -539,9 +652,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(enableGlow = it)) },
                     tag = "toggle_glow"
                 )
-
                 Spacer(Modifier.height(Spacing.md))
-
                 SettingSwitchRow(
                     title = "تاری پس‌زمینه (Blur)",
                     subtitle = "محو کردن پس‌زمینه تماس",
@@ -549,7 +660,6 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(enableBlur = it)) },
                     tag = "toggle_blur"
                 )
-
                 if (settings.enableBlur) {
                     Spacer(Modifier.height(Spacing.md))
                     Text(
@@ -569,11 +679,9 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-
                 Spacer(Modifier.height(Spacing.lg))
-
                 Text(
-                    text = "شدت تاری پس‌زمینه (Dim): ${(settings.backgroundDim * 100).toInt()}%",
+                    text = "شدت تاری پس‌زمینه: ${(settings.backgroundDim * 100).toInt()}%",
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 13.sp
                 )
@@ -591,9 +699,6 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // System & Haptic
-        // ==========================================
         item {
             SettingsSectionCard(title = "سیستم و لرزش", icon = Icons.Default.Security) {
                 SettingSwitchRow(
@@ -603,9 +708,7 @@ fun SettingsScreen(
                     onCheckedChange = { onUpdateSettings(settings.copy(enableHaptic = it)) },
                     tag = "toggle_haptic"
                 )
-
                 Spacer(Modifier.height(Spacing.md))
-
                 SettingSwitchRow(
                     title = "لرزش هنگام تماس",
                     subtitle = "لرزش گوشی هنگام دریافت تماس",
@@ -616,9 +719,6 @@ fun SettingsScreen(
             }
         }
 
-        // ==========================================
-        // Reset
-        // ==========================================
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -679,7 +779,6 @@ fun SettingsScreen(
         }
     }
 
-    // Reset Confirmation Dialog
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
@@ -716,6 +815,86 @@ fun SettingsScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(Radius.lg)
         )
+    }
+
+    if (showGlobalEffectPicker) {
+        EffectPickerDialog(
+            currentEffect = settings.globalEffect,
+            onEffectSelected = { effect ->
+                onUpdateSettings(settings.copy(globalEffect = effect))
+            },
+            onDismiss = { showGlobalEffectPicker = false }
+        )
+    }
+}
+
+@Composable
+private fun EffectModeOption(
+    mode: EffectSelectionMode,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(Radius.md),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        border = androidx.compose.foundation.BorderStroke(
+            if (isSelected) 1.5.dp else 1.dp,
+            if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outline
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.md))
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else Color.Transparent
+                    )
+                    .border(
+                        1.5.dp,
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline,
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(Spacing.sm))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = mode.label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = mode.description,
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

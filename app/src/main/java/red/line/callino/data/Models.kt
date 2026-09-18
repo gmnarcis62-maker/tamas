@@ -29,7 +29,7 @@ val DefaultCallTheme = CallTheme(
     isDefault = true,
     category = "پیش‌فرض",
     descriptionFa = "پوسته زنده و روان با افکت‌های نوری زیبا",
-    effect = EffectType.PULSE_GLOW
+    effect = EffectType.PREMIUM_AURORA
 )
 
 enum class ThemeType {
@@ -102,7 +102,6 @@ data class AssetTheme(
     val effect: EffectType = EffectType.NONE
 ) {
     fun toCallTheme(): CallTheme {
-        // ✅ مسیر خام asset بدون هیچ encode
         val mediaUri = when (type) {
             ThemeType.IMAGE -> assetPath
             ThemeType.VIDEO -> "asset:///$assetPath"
@@ -152,6 +151,11 @@ data class AppSettings(
     val enableHaptic: Boolean = true,
     val vibrateOnCall: Boolean = true,
     val activeGlobalThemeId: String = "theme_aurora",
+
+    val effectSelectionMode: EffectSelectionMode = EffectSelectionMode.RANDOM,
+    val globalEffect: EffectType = EffectType.MESH_GRADIENT,
+    val manualEffectMap: Map<String, String> = emptyMap(),
+
     val supportEmail: String = "gmnarcis@gmail.com",
     val cafeBazaarPackageUrl: String = "bazaar://details?id=red.line.callino",
     val cafeBazaarWebUrl: String = "https://cafebazaar.ir/app/red.line.callino"
