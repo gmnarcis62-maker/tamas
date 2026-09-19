@@ -51,6 +51,9 @@ interface CallinoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserMedia(media: UserMedia)
 
+    @Update
+    suspend fun updateUserMedia(media: UserMedia)
+
     @Query("DELETE FROM user_media WHERE id = :id")
     suspend fun deleteUserMedia(id: String)
 }

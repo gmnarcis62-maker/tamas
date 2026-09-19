@@ -88,7 +88,6 @@ fun MainScreen(
     var showVipModal by remember { mutableStateOf(false) }
     var selectedThemeForDetail by remember { mutableStateOf<CallTheme?>(null) }
 
-    // 🔑 BackHandler: برگشت به خانه به جای خروج از برنامه
     BackHandler(enabled = selectedTab != CallinoNavTab.HOME.ordinal) {
         selectedTab = CallinoNavTab.HOME.ordinal
     }
@@ -147,12 +146,20 @@ fun MainScreen(
                         MyContentScreen(
                             userMediaList = state.userMediaList,
                             vipStatus = state.vipStatus,
-                            onAddUserMedia = { title, uri, type -> viewModel.addUserMedia(title, uri, type) },
-                            onDeleteUserMedia = { id -> viewModel.deleteUserMedia(id) },
-                            onSetAsActiveCallTheme = { media -> viewModel.setMediaAsActiveTheme(media) },
+                            onAddUserMedia = { title, uri, type ->
+                                viewModel.addUserMedia(title, uri, type)
+                            },
+                            onDeleteUserMedia = { id ->
+                                viewModel.deleteUserMedia(id)
+                            },
+                            onUpdateUserMedia = { media ->
+                                viewModel.updateUserMedia(media)
+                            },
+                            onSetAsActiveCallTheme = { media ->
+                                viewModel.setMediaAsActiveTheme(media)
+                            },
                             onPreviewUserMedia = { media ->
-                                val theme = state.themes.find { it.id == "theme_custom_${media.id}" }
-                                if (theme != null) viewModel.startThemePreview(theme = theme)
+                                viewModel.previewUserMedia(media)
                             },
                             onNavigateToVip = { showVipModal = true }
                         )
@@ -182,7 +189,8 @@ fun MainScreen(
                             settings = state.settings,
                             onUpdateSettings = { newSettings -> viewModel.updateSettings(newSettings) },
                             onResetSettings = { viewModel.resetSettings() },
-                            onNavigateToGuide = { /* حذف شده */ }
+                            onNavigateToGuide = { /* حذف شده */ },
+                            onOpenEffectsGallery = { selectedTab = CallinoNavTab.THEMES.ordinal }
                         )
                     }
 
@@ -196,7 +204,6 @@ fun MainScreen(
             }
         }
 
-        // Call Simulator
         AnimatedVisibility(
             visible = state.isSimulatingCall,
             enter = fadeIn(),
@@ -214,7 +221,6 @@ fun MainScreen(
             )
         }
 
-        // VIP Modal
         AnimatedVisibility(visible = showVipModal, enter = fadeIn(), exit = fadeOut()) {
             Box(modifier = Modifier.fillMaxSize().background(FrostedBg)) {
                 VipScreen(

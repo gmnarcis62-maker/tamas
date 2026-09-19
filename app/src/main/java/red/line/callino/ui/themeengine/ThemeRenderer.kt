@@ -22,19 +22,25 @@ import red.line.callino.ui.effects.premium.PremiumEffectRenderer
 fun CallThemeRenderer(
     theme: CallTheme,
     settings: AppSettings? = null,
-    dimAlpha: Float = settings?.backgroundDim ?: 0.3f,
+    dimAlpha: Float = settings?.backgroundDim ?: theme.backgroundDim,
     modifier: Modifier = Modifier
 ) {
-    val enableBlur = settings?.enableBlur ?: false
-    val blurAmount = settings?.blurAmount ?: 0f
+    val enableBlur = theme.enableBlur || (settings?.enableBlur ?: false)
+    val blurAmount = if (theme.enableBlur && theme.blurAmount > 0f) {
+        theme.blurAmount
+    } else {
+        settings?.blurAmount ?: 0f
+    }
     val animationsEnabled = settings?.animationsEnabled ?: true
+    val intensity = theme.effectIntensity.coerceIn(0.3f, 1.5f)
 
-    val resolvedEffect: EffectType = remember(theme.id, settings) {
+    val resolvedEffect: EffectType = remember(theme.id, settings, theme.effect, theme.effectIsExplicit) {
         if (settings == null) theme.effect
         else EffectRandomizer.resolve(
             themeId = theme.id,
             defaultEffect = theme.effect,
-            settings = settings
+            settings = settings,
+            effectIsExplicit = theme.effectIsExplicit
         )
     }
 
@@ -71,6 +77,7 @@ fun CallThemeRenderer(
         PremiumEffectRenderer(
             effect = resolvedEffect,
             animationsEnabled = animationsEnabled,
+            intensity = intensity,
             modifier = Modifier.fillMaxSize()
         )
 

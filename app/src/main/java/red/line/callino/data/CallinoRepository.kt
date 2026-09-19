@@ -30,7 +30,6 @@ class CallinoRepository(private val context: Context) {
     val appSettings = _appSettings.asStateFlow()
 
     init {
-        // 🔑 مقداردهی اولیه AssetThemeManager
         AssetThemeManager.initialize(context.applicationContext)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -72,27 +71,24 @@ class CallinoRepository(private val context: Context) {
         _vipStatus.value = status
     }
 
-    /**
-     * اسکن assets و همگام‌سازی با دیتابیس
-     */
     suspend fun scanAndSyncAssets() = withContext(Dispatchers.IO) {
         try {
-            // 🔑 استفاده از API جدید AssetThemeManager
             AssetThemeManager.refresh(context.applicationContext)
             val loadedAssets: List<AssetTheme> = AssetThemeManager.getAll()
             _assetThemes.value = loadedAssets
 
             val validAssetIds = loadedAssets.map { it.id }.toSet()
 
-            // حذف تم‌های قدیمی که در assets نیستن
             val allDbThemes = dao.getAllThemes()
             for (dbTheme in allDbThemes) {
-                if (!dbTheme.id.startsWith("theme_custom_") && dbTheme.id !in validAssetIds) {
+                if (!dbTheme.id.startsWith("theme_custom_") &&
+                    !dbTheme.id.startsWith("user_media_") &&
+                    dbTheme.id !in validAssetIds
+                ) {
                     dao.deleteTheme(dbTheme.id)
                 }
             }
 
-            // اضافه کردن تم‌های assets به دیتابیس
             for (asset in loadedAssets) {
                 dao.insertTheme(asset.toCallTheme())
             }
@@ -101,6 +97,9 @@ class CallinoRepository(private val context: Context) {
         }
     }
 
+    // ==================================================
+    // Settings (خواندن / ذخیره با پشتیبانی از افکت‌ها)
+    // ==================================================
     private fun loadSettings(): AppSettings {
         val rawButtonStyle = prefs.getString("buttonStyle", "GLASS") ?: "GLASS"
         val normalizedStyle = when (rawButtonStyle) {
@@ -131,6 +130,15 @@ class CallinoRepository(private val context: Context) {
             enableHaptic = prefs.getBoolean("enableHaptic", true),
             vibrateOnCall = prefs.getBoolean("vibrateOnCall", true),
             activeGlobalThemeId = prefs.getString("activeGlobalThemeId", "theme_aurora") ?: "theme_aurora",
+
+            effectSelectionMode = EffectSelectionMode.fromName(
+                prefs.getString("effectSelectionMode", EffectSelectionMode.RANDOM.name)
+            ),
+            globalEffect = EffectType.fromName(
+                prefs.getString("globalEffect", EffectType.MESH_GRADIENT.name)
+            ),
+            manualEffectMap = decodeEffectMap(prefs.getString("manualEffectMap", "") ?: ""),
+
             supportEmail = prefs.getString("supportEmail", "gmnarcis@gmail.com") ?: "gmnarcis@gmail.com",
             cafeBazaarPackageUrl = "bazaar://details?id=red.line.callino",
             cafeBazaarWebUrl = "https://cafebazaar.ir/app/red.line.callino"
@@ -161,10 +169,30 @@ class CallinoRepository(private val context: Context) {
             putBoolean("enableHaptic", newSettings.enableHaptic)
             putBoolean("vibrateOnCall", newSettings.vibrateOnCall)
             putString("activeGlobalThemeId", newSettings.activeGlobalThemeId)
+
+            putString("effectSelectionMode", newSettings.effectSelectionMode.name)
+            putString("globalEffect", newSettings.globalEffect.name)
+            putString("manualEffectMap", encodeEffectMap(newSettings.manualEffectMap))
+
             putString("supportEmail", newSettings.supportEmail)
             apply()
         }
         _appSettings.value = newSettings
+    }
+
+    /** کدگذاری Map<String, String> به یک رشته‌ی ساده برای ذخیره در SharedPreferences */
+    private fun encodeEffectMap(map: Map<String, String>): String {
+        if (map.isEmpty()) return ""
+        return map.entries.joinToString(";;") { "${it.key}||${it.value}" }
+    }
+
+    /** بازگشایی رشته به Map<String, String> */
+    private fun decodeEffectMap(raw: String): Map<String, String> {
+        if (raw.isBlank()) return emptyMap()
+        return raw.split(";;").mapNotNull { entry ->
+            val parts = entry.split("||", limit = 2)
+            if (parts.size == 2) parts[0] to parts[1] else null
+        }.toMap()
     }
 
     fun getButtonSettings(): AppSettings = _appSettings.value
@@ -212,6 +240,9 @@ class CallinoRepository(private val context: Context) {
 
     suspend fun deleteContactTheme(contactId: String) = dao.deleteContactTheme(contactId)
 
+    // ==================================================
+    // Media import / user media
+    // ==================================================
     suspend fun importMediaFile(inputUriString: String, type: ThemeType): String? = withContext(Dispatchers.IO) {
         try {
             val uri = android.net.Uri.parse(inputUriString)
@@ -257,6 +288,8 @@ class CallinoRepository(private val context: Context) {
 
     suspend fun addUserMedia(media: UserMedia) = dao.insertUserMedia(media)
 
+    suspend fun updateUserMedia(media: UserMedia) = dao.updateUserMedia(media)
+
     suspend fun deleteUserMedia(id: String) = withContext(Dispatchers.IO) {
         try {
             val media = dao.getUserMediaById(id)
@@ -275,6 +308,7 @@ class CallinoRepository(private val context: Context) {
         }
         dao.deleteUserMedia(id)
         dao.deleteTheme("theme_custom_$id")
+        dao.deleteTheme("user_media_$id")
     }
 
     suspend fun addCustomTheme(theme: CallTheme) = dao.insertTheme(theme)

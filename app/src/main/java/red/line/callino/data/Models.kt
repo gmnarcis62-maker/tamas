@@ -16,7 +16,13 @@ data class CallTheme(
     val isDefault: Boolean = false,
     val category: String = "عمومی",
     val descriptionFa: String = "",
-    val effect: EffectType = EffectType.NONE
+    val effect: EffectType = EffectType.NONE,
+    /** اگر true باشد، افکت انتخابی کاربر همیشه اولویت دارد و EffectRandomizer نادیده گرفته می‌شود */
+    val effectIsExplicit: Boolean = false,
+    val effectIntensity: Float = 1.0f,
+    val backgroundDim: Float = 0.3f,
+    val enableBlur: Boolean = false,
+    val blurAmount: Float = 10f
 )
 
 val DefaultCallTheme = CallTheme(
@@ -50,6 +56,10 @@ data class ContactTheme(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+/**
+ * محتوای شخصی کاربر (عکس یا ویدیو از گالری).
+ * کاربر می‌تواند برای هر کدام، افکت و تنظیمات ظاهری کاملاً اختصاصی تعیین کند.
+ */
 @Entity(tableName = "user_media")
 data class UserMedia(
     @PrimaryKey val id: String,
@@ -58,8 +68,41 @@ data class UserMedia(
     val mediaType: ThemeType,
     val durationMs: Long = 0,
     val addedAt: Long = System.currentTimeMillis(),
-    val isSelectedForCall: Boolean = false
-)
+    val isSelectedForCall: Boolean = false,
+
+    // ---- شخصی‌سازی کامل ----
+    val effect: EffectType = EffectType.NONE,
+    val effectIntensity: Float = 1.0f,
+    val backgroundDim: Float = 0.3f,
+    val enableBlur: Boolean = false,
+    val blurAmount: Float = 10f,
+    val enableParticles: Boolean = true,
+    val enableGlow: Boolean = true
+) {
+    /**
+     * تبدیل به CallTheme برای رندر در صفحه تماس.
+     * effectIsExplicit = true یعنی کاربر خودش افکت رو انتخاب کرده
+     * و نباید حالت تصادفی روی آن اعمال شود.
+     */
+    fun toCallTheme(): CallTheme = CallTheme(
+        id = "user_media_$id",
+        titleFa = title,
+        titleEn = title,
+        type = mediaType,
+        previewResName = uri,
+        mediaUri = uri,
+        isPremium = false,
+        isDefault = false,
+        category = "محتوای من 📁",
+        descriptionFa = "محتوای شخصی شما",
+        effect = effect,
+        effectIsExplicit = true,
+        effectIntensity = effectIntensity,
+        backgroundDim = backgroundDim,
+        enableBlur = enableBlur,
+        blurAmount = blurAmount
+    )
+}
 
 data class VipStatus(
     val isVip: Boolean = false,
@@ -123,7 +166,8 @@ data class AssetTheme(
             isPremium = isVip,
             category = category,
             descriptionFa = if (descriptionFa.isNotBlank()) descriptionFa else "پوسته پیش‌فرض داخلی تماسینو",
-            effect = effect
+            effect = effect,
+            effectIsExplicit = false
         )
     }
 }

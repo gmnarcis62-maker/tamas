@@ -47,7 +47,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
     private val vipManager = LocalVipManager.getInstance(application)
     private val themeStoreRepo = ThemeStoreRepository.getInstance(application)
 
-    // 🔑 SharedPreferences برای همگام‌سازی با IncomingCallReceiver
     private val servicePrefs = application.getSharedPreferences(
         "callino_prefs", Context.MODE_PRIVATE
     )
@@ -84,7 +83,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
             ?: themes.firstOrNull()
             ?: red.line.callino.data.DefaultCallTheme
 
-        // 🔑 همگام‌سازی خودکار با SharedPreferences هر بار که state تغییر می‌کنه
         syncServiceFlagToPrefs(settings.isServiceEnabled)
 
         CallinoUiState(
@@ -110,11 +108,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
         initialValue = CallinoUiState()
     )
 
-    /**
-     * 🔑 هر بار که settings تغییر می‌کنه، مقدار isServiceEnabled رو
-     * در SharedPreferences "callino_prefs" هم می‌نویسیم تا
-     * IncomingCallReceiver اون رو ببینه
-     */
     private fun syncServiceFlagToPrefs(enabled: Boolean) {
         val currentPrefsValue = servicePrefs.getBoolean("isServiceEnabled", false)
         if (currentPrefsValue != enabled) {
@@ -219,16 +212,9 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
                 )
                 repository.addUserMedia(media)
 
-                val theme = CallTheme(
-                    id = "theme_custom_$mediaId",
-                    titleFa = title,
-                    titleEn = title,
-                    type = type,
-                    previewResName = "custom",
-                    mediaUri = persistentUri,
-                    category = "شخصی"
-                )
-                repository.addCustomTheme(theme)
+                // ذخیره CallTheme متناظر با تنظیمات شخصی‌سازی
+                repository.addCustomTheme(media.toCallTheme())
+
                 onResult?.invoke(true)
             } else {
                 onResult?.invoke(false)
@@ -242,21 +228,28 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * بروزرسانی محتوای کاربر (افکت، شدت، تنظیمات ظاهری).
+     * هم UserMedia و هم CallTheme متناظر را بروز می‌کند.
+     */
+    fun updateUserMedia(media: UserMedia) {
+        viewModelScope.launch {
+            repository.updateUserMedia(media)
+            repository.addCustomTheme(media.toCallTheme())
+        }
+    }
+
     fun setMediaAsActiveTheme(media: UserMedia) {
         viewModelScope.launch {
-            val themeId = "theme_custom_${media.id}"
-            val customTheme = CallTheme(
-                id = themeId,
-                titleFa = media.title,
-                titleEn = media.title,
-                type = media.mediaType,
-                previewResName = "custom",
-                mediaUri = media.uri,
-                category = "شخصی"
-            )
-            repository.addCustomTheme(customTheme)
-            repository.setActiveTheme(themeId)
+            val theme = media.toCallTheme()
+            repository.addCustomTheme(theme)
+            repository.setActiveTheme(theme.id)
         }
+    }
+
+    /** پیش‌نمایش مستقیم یک محتوای کاربر بدون نیاز به فعال‌سازی */
+    fun previewUserMedia(media: UserMedia) {
+        startThemePreview(theme = media.toCallTheme())
     }
 
     fun setServiceEnabled(enabled: Boolean) {
@@ -264,7 +257,6 @@ class CallinoViewModel(application: Application) : AndroidViewModel(application)
             val current = uiState.value.settings
             repository.updateSettings(current.copy(isServiceEnabled = enabled))
 
-            // 🔑 همگام‌سازی فوری با SharedPreferences برای IncomingCallReceiver
             servicePrefs.edit()
                 .putBoolean("isServiceEnabled", enabled)
                 .apply()
